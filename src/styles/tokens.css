@@ -1,0 +1,213 @@
+/* =========================================================
+   Analog Design — Design Tokens
+   The single source of truth for color, type, space, motion.
+   ========================================================= */
+
+:root {
+  /* ---------- COLOR ---------- */
+  /* Ink / Paper — never pure black, never pure white */
+  --ad-ink:        #0a0a0a;
+  --ad-paper:      #f4f1ea;
+
+  /* Graphite scale — grids, dividers, hints */
+  --ad-graphite-9: #1a1a1a;
+  --ad-graphite-7: #4a4a4a;
+  --ad-graphite-5: #8a8a8a;
+  --ad-graphite-3: #c9c5bc;
+  --ad-graphite-1: #e6e1d6;
+
+  /* Signal — the only accent. Reserved for ALERT / LIVE / CRITICAL */
+  --ad-signal:     #ff3b00;
+
+  /* Semantic mappings */
+  --ad-fg:         var(--ad-ink);
+  --ad-bg:         var(--ad-paper);
+  --ad-rule:       var(--ad-ink);
+  --ad-muted:      var(--ad-graphite-5);
+  --ad-grid:       var(--ad-graphite-3);
+
+  /* ---------- TYPOGRAPHY ---------- */
+  --ad-font-mono:  'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono',
+                   'IBM Plex Mono', 'Menlo', 'Consolas', ui-monospace, monospace;
+  --ad-font-jp:    'Hiragino Sans', 'Yu Gothic', 'YuGothic', 'Meiryo', sans-serif;
+  --ad-font-prose: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* Type scale — stepped, not fluid */
+  --ad-text-2xs:   10px;
+  --ad-text-xs:    11px;
+  --ad-text-sm:    12px;
+  --ad-text-base:  14px;
+  --ad-text-md:    16px;
+  --ad-text-lg:    20px;
+  --ad-text-xl:    28px;
+  --ad-text-2xl:   40px;
+  --ad-text-3xl:   64px;
+
+  /* Letter-spacing — wide for labels, tight for numbers */
+  --ad-track-tight: -0.01em;
+  --ad-track-flat:   0em;
+  --ad-track-wide:   0.08em;
+  --ad-track-mega:   0.18em;
+
+  /* Line-heights */
+  --ad-leading-tight: 1.05;
+  --ad-leading-snug:  1.25;
+  --ad-leading-prose: 1.55;
+
+  /* Weights — only two, ever */
+  --ad-weight-regular: 400;
+  --ad-weight-bold:    700;
+
+  /* ---------- SPACING — 4px grid ---------- */
+  --ad-space-0:   0;
+  --ad-space-1:   4px;
+  --ad-space-2:   8px;
+  --ad-space-3:   12px;
+  --ad-space-4:   16px;
+  --ad-space-5:   20px;
+  --ad-space-6:   24px;
+  --ad-space-8:   32px;
+  --ad-space-10:  40px;
+  --ad-space-12:  48px;
+  --ad-space-16:  64px;
+
+  /* ---------- BORDERS ---------- */
+  --ad-border-hair: 1px;
+  --ad-border-thin: 1.5px;
+  --ad-border-bold: 2px;
+  --ad-radius-0:    0;
+  --ad-radius-1:    1px;
+  --ad-radius-2:    2px;   /* maximum allowed corner radius */
+
+  /* ---------- MOTION — stepped, mechanical ---------- */
+  --ad-dur-blink:    80ms;
+  --ad-dur-tick:    120ms;
+  --ad-dur-scan:    1800ms;
+  --ad-dur-orbit:   3600ms;
+  --ad-dur-packet:  2400ms;
+  --ad-dur-sweep:    900ms;
+  --ad-ease-step:   steps(2, end);
+  --ad-ease-step6:  steps(6, end);
+  --ad-ease-step12: steps(12, end);
+  --ad-ease-step24: steps(24, end);
+  --ad-ease-flat:   linear;
+
+  /* ---------- ELEVATION ---------- */
+  /* No shadows. Use rules and brackets instead. */
+}
+
+/* =========================================================
+   GLOBAL BASE
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ad-bg);
+  color: var(--ad-fg);
+  font-family: var(--ad-font-mono);
+  font-size: var(--ad-text-base);
+  line-height: var(--ad-leading-snug);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+::selection {
+  background: var(--ad-ink);
+  color: var(--ad-paper);
+}
+
+/* Mechanical caret blink for any input */
+@keyframes ad-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* Utility: any element marked .ad-blink steps on/off */
+.ad-blink {
+  animation: ad-blink 1s var(--ad-ease-step) infinite;
+}
+
+/* =========================================================
+   PRIMITIVES — small reusable utilities
+   ========================================================= */
+
+.ad-rule {
+  display: block;
+  width: 100%;
+  height: 0;
+  border-top: var(--ad-border-hair) solid var(--ad-rule);
+}
+
+.ad-rule--dotted {
+  border-top-style: dotted;
+}
+
+.ad-stamp {
+  font-family: var(--ad-font-mono);
+  font-size: var(--ad-text-2xs);
+  letter-spacing: var(--ad-track-wide);
+  text-transform: uppercase;
+  color: var(--ad-muted);
+}
+
+/* =========================================================
+   ANIMATION PRIMITIVES — shared by all animated components
+   Stepped, mechanical, never smooth
+   ========================================================= */
+
+@keyframes ad-scan {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+@keyframes ad-orbit {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes ad-pulse {
+  0%, 49%   { opacity: 1; transform: scale(1);   }
+  50%, 100% { opacity: 0.4; transform: scale(0.9); }
+}
+
+@keyframes ad-stream {
+  from { stroke-dashoffset: var(--ad-stream-length, 200); }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes ad-traverse {
+  from { offset-distance: 0%;   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  to   { offset-distance: 100%; opacity: 0; }
+}
+
+@keyframes ad-grow-y {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes ad-tick-rotate {
+  /* steps-based "tick" rotation for knobs */
+  from { transform: rotate(var(--ad-tick-from, 0deg));   }
+  to   { transform: rotate(var(--ad-tick-to,   360deg)); }
+}
+
+/* Reduced motion — full override */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

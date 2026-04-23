@@ -1,0 +1,205 @@
+---
+/**
+ * Catalog layout — base page shell for the Analog Design catalog.
+ * Loads tokens, fonts, and provides a bracketed viewport with
+ * a header strip and footer strip.
+ */
+
+interface NavItem { href: string; label: string; }
+
+interface Props {
+  title?: string;
+  description?: string;
+  channel?: string;
+  nav?: NavItem[];
+}
+
+const {
+  title = 'ANALOG_DESIGN',
+  description = 'Analog Design is a brutalist, monochrome component catalog for instrument-like interfaces built with Astro.',
+  channel = 'ARCHIVE_LOG',
+  nav = [
+    { href: '/',          label: 'V0.2 — FOUNDATION' },
+    { href: '/v3',        label: 'V0.3 — EXPANSION'  },
+    { href: '/dashboard', label: 'SPEC — DASHBOARD'  },
+  ],
+} = Astro.props;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : Astro.url.toString();
+const baseUrl = import.meta.env.BASE_URL ?? '/';
+const stripBase = (path: string) => {
+  const normalizedBase = baseUrl.replace(/\/$/, '');
+  if (normalizedBase && normalizedBase !== '/' && path.startsWith(normalizedBase)) {
+    return path.slice(normalizedBase.length) || '/';
+  }
+  return path || '/';
+};
+const currentPath = stripBase(Astro.url.pathname.replace(/\/$/, '') || '/');
+const withBase = (href: string) => {
+  if (href === '/') return baseUrl;
+  return `${baseUrl.replace(/\/$/, '')}${href}`;
+};
+const now = new Date();
+const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <style is:global>
+      @import '../styles/tokens.css';
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- Top strip ============================================== -->
+      <header class="strip strip--top">
+        <div class="strip__left">
+          <span class="strip__dot ad-blink" aria-hidden="true"></span>
+          <span class="strip__brand">ANALOG_DESIGN</span>
+          <span class="strip__sep">//</span>
+          <span class="strip__channel">{channel}</span>
+        </div>
+        <div class="strip__right">
+          <span class="strip__meta">VER 1.2</span>
+          <span class="strip__meta">{stamp}</span>
+          <span class="strip__meta">NODE EGH-9320</span>
+        </div>
+      </header>
+
+      {/* Page nav strip */}
+      <nav class="nav" aria-label="catalog pages">
+        {nav.map((item) => {
+          const active = (item.href === '/' ? currentPath === '/' : currentPath.startsWith(item.href));
+          return (
+            <a href={withBase(item.href)} class:list={['nav__link', active && 'nav__link--active']}>
+              <span class="nav__bracket" aria-hidden="true">[</span>
+              {item.label}
+              <span class="nav__bracket" aria-hidden="true">]</span>
+            </a>
+          );
+        })}
+      </nav>
+
+      <main class="frame">
+        <slot />
+      </main>
+
+      <!-- Bottom strip =========================================== -->
+      <footer class="strip strip--bot">
+        <span class="strip__meta">ACCESS CONFIRMED</span>
+        <span class="strip__meta">PACKET LOSS 0.3%</span>
+        <span class="strip__meta">CHECKSUM OK</span>
+        <span class="strip__meta">THROUGHPUT HIGH</span>
+      </footer>
+    </div>
+  </body>
+</html>
+
+<style>
+  .page {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    background: var(--ad-paper);
+  }
+
+  .strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--ad-space-2) var(--ad-space-4);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    gap: var(--ad-space-4);
+  }
+
+  .strip--bot {
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+    border-bottom: 0;
+    color: var(--ad-muted);
+    gap: var(--ad-space-6);
+    justify-content: flex-end;
+  }
+
+  .strip__left,
+  .strip__right {
+    display: flex;
+    align-items: center;
+    gap: var(--ad-space-3);
+  }
+
+  .strip__dot {
+    width: 6px;
+    height: 6px;
+    background: var(--ad-ink);
+    display: inline-block;
+  }
+
+  .strip__brand {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .strip__sep,
+  .strip__meta {
+    color: var(--ad-muted);
+  }
+
+  .strip__channel {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .frame {
+    padding: var(--ad-space-8) var(--ad-space-6);
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .nav {
+    display: flex;
+    gap: var(--ad-space-1);
+    padding: var(--ad-space-2) var(--ad-space-4);
+    border-bottom: var(--ad-border-hair) dotted var(--ad-graphite-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    flex-wrap: wrap;
+  }
+
+  .nav__link {
+    color: var(--ad-muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    transition: color var(--ad-dur-blink) var(--ad-ease-step);
+  }
+
+  .nav__link:hover {
+    color: var(--ad-ink);
+  }
+
+  .nav__link--active {
+    color: var(--ad-ink);
+    font-weight: var(--ad-weight-bold);
+    background: var(--ad-graphite-1);
+  }
+
+  .nav__bracket {
+    color: var(--ad-graphite-5);
+  }
+
+  .nav__link--active .nav__bracket {
+    color: var(--ad-ink);
+  }
+</style>

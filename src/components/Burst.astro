@@ -1,0 +1,113 @@
+---
+/**
+ * Burst — radial line graphic with configurable density.
+ *
+ * Larger and more configurable than the `burst` variant of
+ * Crosshair. Use as decorative anchor for marquee panels,
+ * empty states, or graphic dividers. Supports half-burst
+ * (origin from edge) for "horizon" layouts.
+ *
+ * @example
+ *   <Burst rays={24} size={120} />
+ *   <Burst rays={36} size={160} origin="bottom" />
+ *   <Burst rays={16} size={80}  ringed />
+ */
+
+type Origin = 'center' | 'top' | 'bottom' | 'left' | 'right';
+
+interface Props {
+  rays?: number;
+  size?: number;
+  origin?: Origin;
+  /** Adds an outer ring (target-like) */
+  ringed?: boolean;
+  stroke?: number;
+  label?: string;
+}
+
+const {
+  rays = 24,
+  size = 120,
+  origin = 'center',
+  ringed = false,
+  stroke = 1,
+  label,
+} = Astro.props;
+
+// Resolve origin point
+const c = size / 2;
+const r = size / 2 - stroke;
+const origins = {
+  center: { x: c,    y: c    , arcStart: 0,             arcEnd: Math.PI * 2 },
+  top:    { x: c,    y: 0    , arcStart: 0,             arcEnd: Math.PI     },
+  bottom: { x: c,    y: size , arcStart: Math.PI,       arcEnd: Math.PI * 2 },
+  left:   { x: 0,    y: c    , arcStart: -Math.PI / 2,  arcEnd: Math.PI / 2 },
+  right:  { x: size, y: c    , arcStart: Math.PI / 2,   arcEnd: Math.PI * 1.5 },
+};
+const o = origins[origin];
+const span = o.arcEnd - o.arcStart;
+// Closed circle (center) uses full span / rays; half/quarter-bursts subdivide span / (rays-1)
+const step = origin === 'center' ? span / rays : span / Math.max(rays - 1, 1);
+
+const lines = Array.from({ length: rays }).map((_, i) => {
+  const a = o.arcStart + step * i;
+  return {
+    x2: o.x + Math.cos(a) * size,
+    y2: o.y + Math.sin(a) * size,
+  };
+});
+---
+
+<figure class="ad-burst">
+  <svg
+    width={size}
+    height={size}
+    viewBox={`0 0 ${size} ${size}`}
+    fill="none"
+    stroke="currentColor"
+    stroke-width={stroke}
+    role="img"
+    aria-label={label ?? 'burst'}
+  >
+    <defs>
+      <clipPath id={`ad-burst-clip-${size}-${rays}-${origin}`}>
+        <rect x="0" y="0" width={size} height={size} />
+      </clipPath>
+    </defs>
+
+    <g clip-path={`url(#ad-burst-clip-${size}-${rays}-${origin})`}>
+      {lines.map((l) => (
+        <line x1={o.x} y1={o.y} x2={l.x2} y2={l.y2} />
+      ))}
+    </g>
+
+    {ringed && <circle cx={c} cy={c} r={r} />}
+    <circle cx={o.x} cy={o.y} r={2.5} fill="currentColor" />
+  </svg>
+
+  {label && <figcaption class="ad-burst__label">{label}</figcaption>}
+</figure>
+
+<style>
+  .ad-burst {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ad-space-1);
+    margin: 0;
+    color: var(--ad-ink);
+  }
+
+  .ad-burst svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  .ad-burst__label {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+</style>

@@ -1,0 +1,89 @@
+---
+/**
+ * KanaLabel — Japanese character stamp with optional latin annotation.
+ *
+ * Used as decorative visual texture that still carries semantic
+ * weight (the kana is the "brand" of that surface). Accessible:
+ * the latin text is the visible caption, the kana gets an aria-label.
+ *
+ * @example
+ *   <KanaLabel kana="稿" latin="ARCHIVE" />
+ *   <KanaLabel kana="再" latin="REBOOT" size="lg" />
+ *   <KanaLabel kana="方式" latin="METHOD" direction="row" />
+ */
+
+type Size = 'sm' | 'md' | 'lg' | 'xl';
+type Direction = 'row' | 'col';
+
+interface Props {
+  kana: string;
+  latin?: string;
+  size?: Size;
+  direction?: Direction;
+}
+
+const {
+  kana,
+  latin,
+  size = 'md',
+  direction = 'col',
+} = Astro.props;
+---
+
+<span
+  class:list={[
+    'ad-kana',
+    `ad-kana--${size}`,
+    `ad-kana--${direction}`,
+  ]}
+  aria-label={latin ?? kana}
+  role="img"
+>
+  <span class="ad-kana__char" aria-hidden="true">{kana}</span>
+  {latin && <span class="ad-kana__latin">{latin}</span>}
+</span>
+
+<style>
+  .ad-kana {
+    display: inline-flex;
+    align-items: center;
+    color: var(--ad-ink);
+    line-height: 1;
+  }
+
+  .ad-kana--col {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ad-kana--row {
+    flex-direction: row;
+    gap: var(--ad-space-2);
+  }
+
+  .ad-kana__char {
+    font-family: var(--ad-font-jp);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-flat);
+  }
+
+  .ad-kana__latin {
+    font-family: var(--ad-font-mono);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  /* Sizes — kana scales, latin stays small */
+  .ad-kana--sm .ad-kana__char  { font-size: var(--ad-text-md); }
+  .ad-kana--sm .ad-kana__latin { font-size: var(--ad-text-2xs); }
+
+  .ad-kana--md .ad-kana__char  { font-size: var(--ad-text-xl); }
+  .ad-kana--md .ad-kana__latin { font-size: var(--ad-text-2xs); }
+
+  .ad-kana--lg .ad-kana__char  { font-size: var(--ad-text-2xl); }
+  .ad-kana--lg .ad-kana__latin { font-size: var(--ad-text-xs); }
+
+  .ad-kana--xl .ad-kana__char  { font-size: var(--ad-text-3xl); }
+  .ad-kana--xl .ad-kana__latin { font-size: var(--ad-text-xs); }
+</style>

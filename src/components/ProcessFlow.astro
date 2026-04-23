@@ -1,0 +1,314 @@
+---
+/**
+ * ProcessFlow — sequential process with animated token traversal.
+ *
+ * Renders an ordered set of `steps`, each with a `state`. A small
+ * "token" (square block) advances through the chain step by step,
+ * using SMIL `animateMotion` along the connector line.
+ *
+ * @example
+ *   <ProcessFlow
+ *     title="ETL_PIPELINE"
+ *     steps={[
+ *       { label: 'INGEST',  state: 'done' },
+ *       { label: 'PARSE',   state: 'done' },
+ *       { label: 'NORMALIZE', state: 'active' },
+ *       { label: 'INDEX',   state: 'pending' },
+ *       { label: 'EMIT',    state: 'pending' },
+ *     ]}
+ *   />
+ *
+ *   <ProcessFlow direction="vertical" steps={[...]} />
+ */
+
+type StepState = 'done' | 'active' | 'pending' | 'error' | 'skipped';
+
+interface Step {
+  label: string;
+  code?: string;
+  state?: StepState;
+}
+
+interface Props {
+  steps: Step[];
+  title?: string;
+  direction?: 'horizontal' | 'vertical';
+  /** Animate the traversal token */
+  animated?: boolean;
+}
+
+const {
+  steps,
+  title,
+  direction = 'horizontal',
+  animated = true,
+} = Astro.props;
+
+const stateLabels: Record<StepState, string> = {
+  done:    'OK',
+  active:  'RUN',
+  pending: 'WAIT',
+  error:   'ERR',
+  skipped: 'SKIP',
+};
+---
+
+<section class:list={['ad-flow', `ad-flow--${direction}`, animated && 'ad-flow--animated']} aria-label={title ?? 'process flow'}>
+  {title && (
+    <header class="ad-flow__head">
+      <span class="ad-flow__title">{title}</span>
+      <span class="ad-flow__progress">
+        {steps.filter((s) => s.state === 'done').length} / {steps.length}
+      </span>
+    </header>
+  )}
+
+  <ol class="ad-flow__chain">
+    {steps.map((step, i) => (
+      <li class:list={['ad-flow__step', `ad-flow__step--${step.state ?? 'pending'}`]}>
+        <div class="ad-flow__node">
+          <span class="ad-flow__index">{String(i + 1).padStart(2, '0')}</span>
+          <span class="ad-flow__dot" aria-hidden="true">
+            {step.state === 'done'   && '●'}
+            {step.state === 'active' && '◐'}
+            {step.state === 'error'  && '×'}
+            {step.state === 'pending' && '○'}
+            {step.state === 'skipped' && '⊘'}
+          </span>
+        </div>
+
+        <div class="ad-flow__meta">
+          <span class="ad-flow__label">{step.label}</span>
+          <span class="ad-flow__state">{stateLabels[step.state ?? 'pending']}</span>
+          {step.code && <span class="ad-flow__code">[{step.code}]</span>}
+        </div>
+
+        {i < steps.length - 1 && (
+          <div class="ad-flow__link" aria-hidden="true">
+            <span class="ad-flow__rail"></span>
+            {animated && <span class="ad-flow__token" style={`--token-delay:${i * 480}ms;`}></span>}
+          </div>
+        )}
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .ad-flow {
+    --node-size: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    padding: var(--ad-space-4);
+    background: var(--ad-paper);
+  }
+
+  .ad-flow__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) dotted var(--ad-graphite-5);
+  }
+
+  .ad-flow__title {
+    font-size: var(--ad-text-sm);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-flow__progress {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    color: var(--ad-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-flow__chain {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* HORIZONTAL ============================================ */
+  .ad-flow--horizontal .ad-flow__chain {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding: var(--ad-space-2) 0;
+  }
+
+  .ad-flow--horizontal .ad-flow__step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: var(--ad-space-2);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .ad-flow--horizontal .ad-flow__node { grid-column: 1 / 2; grid-row: 1 / 2; }
+  .ad-flow--horizontal .ad-flow__meta {
+    grid-column: 1 / 3;
+    grid-row: 2 / 3;
+    margin-top: var(--ad-space-2);
+    padding-right: var(--ad-space-4);
+  }
+  .ad-flow--horizontal .ad-flow__link {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    display: flex;
+    align-items: center;
+    min-width: 80px;
+    height: var(--node-size);
+    position: relative;
+    margin: 0 var(--ad-space-1);
+  }
+
+  /* VERTICAL ============================================== */
+  .ad-flow--vertical .ad-flow__chain {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ad-flow--vertical .ad-flow__step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--ad-space-3);
+    padding-bottom: var(--ad-space-3);
+    position: relative;
+  }
+
+  .ad-flow--vertical .ad-flow__node { grid-row: 1; grid-column: 1; }
+  .ad-flow--vertical .ad-flow__meta { grid-row: 1; grid-column: 2; padding-bottom: var(--ad-space-3); }
+  .ad-flow--vertical .ad-flow__link {
+    grid-row: 2;
+    grid-column: 1;
+    width: var(--node-size);
+    height: 28px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* NODE ================================================== */
+  .ad-flow__node {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .ad-flow__index {
+    font-size: 9px;
+    letter-spacing: var(--ad-track-wide);
+    color: var(--ad-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-flow__dot {
+    width: var(--node-size);
+    height: var(--node-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--ad-border-thin) solid var(--ad-ink);
+    background: var(--ad-paper);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* META ================================================= */
+  .ad-flow__meta {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .ad-flow__label {
+    font-weight: var(--ad-weight-bold);
+    color: var(--ad-ink);
+  }
+
+  .ad-flow__state {
+    color: var(--ad-muted);
+  }
+
+  .ad-flow__code {
+    color: var(--ad-muted);
+  }
+
+  /* LINK / TOKEN ========================================= */
+  .ad-flow__rail {
+    flex: 1;
+    width: 100%;
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  .ad-flow--vertical .ad-flow__rail {
+    border-top: 0;
+    border-left: var(--ad-border-hair) solid var(--ad-ink);
+    height: 100%;
+    width: 0;
+  }
+
+  .ad-flow__token {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--ad-ink);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  .ad-flow--horizontal .ad-flow__token {
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    animation: ad-token-x var(--ad-dur-packet) var(--ad-ease-step12) infinite;
+    animation-delay: var(--token-delay, 0ms);
+  }
+
+  .ad-flow--vertical .ad-flow__token {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    animation: ad-token-y var(--ad-dur-packet) var(--ad-ease-step12) infinite;
+    animation-delay: var(--token-delay, 0ms);
+  }
+
+  @keyframes ad-token-x {
+    from { left: 0;    opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    to   { left: 100%; opacity: 0; }
+  }
+  @keyframes ad-token-y {
+    from { top: 0;    opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    to   { top: 100%; opacity: 0; }
+  }
+
+  /* STATE COLORING ====================================== */
+  .ad-flow__step--done .ad-flow__dot     { background: var(--ad-ink); color: var(--ad-paper); }
+  .ad-flow__step--active .ad-flow__dot   { background: var(--ad-paper); animation: ad-pulse 1.2s var(--ad-ease-step) infinite; }
+  .ad-flow__step--active .ad-flow__state { color: var(--ad-ink); font-weight: var(--ad-weight-bold); }
+  .ad-flow__step--pending .ad-flow__dot  { color: var(--ad-graphite-5); border-color: var(--ad-graphite-5); }
+  .ad-flow__step--pending .ad-flow__label { color: var(--ad-graphite-7); }
+  .ad-flow__step--error .ad-flow__dot    { color: var(--ad-signal); border-color: var(--ad-signal); }
+  .ad-flow__step--error .ad-flow__state,
+  .ad-flow__step--error .ad-flow__label  { color: var(--ad-signal); }
+  .ad-flow__step--skipped .ad-flow__dot,
+  .ad-flow__step--skipped .ad-flow__label { color: var(--ad-graphite-5); }
+</style>

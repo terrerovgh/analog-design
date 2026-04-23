@@ -1,0 +1,156 @@
+---
+/**
+ * DataCluster — a boxed group of metrics with a label and optional code.
+ *
+ * Inspired by the "MODULE-B7", "CONFIG", "DATACLUSTER" blocks
+ * in the Analog Design source plate. Use it for telemetry,
+ * stats, environment readouts.
+ *
+ * @example
+ *   <DataCluster
+ *     name="MODULE-B7"
+ *     code="0x7B6A"
+ *     metrics={[
+ *       { label: 'TEMP',    value: '27', unit: '°C' },
+ *       { label: 'POWER',   value: '68', unit: '%'  },
+ *       { label: 'CHANNEL', value: '04' },
+ *     ]}
+ *     footer="STABLE — UPTIME 18:42"
+ *   />
+ */
+
+interface Metric {
+  label: string;
+  value: string | number;
+  unit?: string;
+}
+
+interface Props {
+  name: string;
+  code?: string;
+  metrics: Metric[];
+  footer?: string;
+}
+
+const { name, code, metrics, footer } = Astro.props;
+---
+
+<section class="ad-cluster" aria-label={name}>
+  <header class="ad-cluster__head">
+    <span class="ad-cluster__name">{name}</span>
+    {code && <span class="ad-cluster__code">[{code}]</span>}
+  </header>
+
+  <hr class="ad-cluster__rule" />
+
+  <dl class="ad-cluster__grid">
+    {metrics.map((m) => (
+      <div class="ad-cluster__row">
+        <dt class="ad-cluster__label">{m.label}</dt>
+        <dd class="ad-cluster__value">
+          <span class="ad-cluster__num">{m.value}</span>
+          {m.unit && <span class="ad-cluster__unit">{m.unit}</span>}
+        </dd>
+      </div>
+    ))}
+  </dl>
+
+  {footer && (
+    <>
+      <hr class="ad-cluster__rule ad-cluster__rule--dotted" />
+      <footer class="ad-cluster__foot">{footer}</footer>
+    </>
+  )}
+</section>
+
+<style>
+  .ad-cluster {
+    --pad: var(--ad-space-3);
+    display: inline-flex;
+    flex-direction: column;
+    min-width: 180px;
+    padding: var(--pad);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+    font-family: var(--ad-font-mono);
+    color: var(--ad-ink);
+  }
+
+  .ad-cluster__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+  }
+
+  .ad-cluster__name {
+    font-size: var(--ad-text-sm);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-cluster__code {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-flat);
+    color: var(--ad-muted);
+  }
+
+  .ad-cluster__rule {
+    border: 0;
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+    margin: var(--ad-space-2) 0;
+    width: 100%;
+  }
+  .ad-cluster__rule--dotted {
+    border-top-style: dotted;
+    border-top-color: var(--ad-graphite-5);
+  }
+
+  .ad-cluster__grid {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--ad-space-1);
+  }
+
+  .ad-cluster__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: var(--ad-space-3);
+  }
+
+  .ad-cluster__label {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-cluster__value {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+
+  .ad-cluster__num {
+    font-size: var(--ad-text-base);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-tight);
+  }
+
+  .ad-cluster__unit {
+    font-size: var(--ad-text-2xs);
+    color: var(--ad-muted);
+  }
+
+  .ad-cluster__foot {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+</style>

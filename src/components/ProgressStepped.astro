@@ -1,0 +1,82 @@
+---
+/**
+ * ProgressStepped — block-character progress bar.
+ *
+ * The "█████░░░░░ 50%" terminal-style indicator. Pure text,
+ * no SVG, scales with parent font-size. Accessible as a
+ * progressbar role.
+ *
+ * @example
+ *   <ProgressStepped value={68} />
+ *   <ProgressStepped value={92} width={30} label="UPLOAD" showValue />
+ *   <ProgressStepped value={3}  max={10} chars={['█','░']} label="STAGE" />
+ */
+
+interface Props {
+  value: number;
+  max?: number;
+  width?: number;
+  /** [filledChar, emptyChar] — defaults to ['█', '░'] */
+  chars?: [string, string];
+  label?: string;
+  showValue?: boolean;
+  unit?: string;
+}
+
+const {
+  value,
+  max = 100,
+  width = 24,
+  chars = ['█', '░'],
+  label,
+  showValue = true,
+  unit = '%',
+} = Astro.props;
+
+const pct = Math.max(0, Math.min(1, value / max));
+const filled = Math.round(pct * width);
+const empty  = width - filled;
+const bar = chars[0].repeat(filled) + chars[1].repeat(empty);
+const display = unit === '%'
+  ? `${Math.round(pct * 100)}%`
+  : `${value}/${max}${unit ? ' ' + unit : ''}`;
+---
+
+<div class="ad-progress" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={label}>
+  {label && <span class="ad-progress__label">{label}</span>}
+  <span class="ad-progress__bar" aria-hidden="true">{bar}</span>
+  {showValue && <span class="ad-progress__value">{display}</span>}
+</div>
+
+<style>
+  .ad-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ad-space-2);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    color: var(--ad-ink);
+    line-height: 1;
+    letter-spacing: var(--ad-track-flat);
+  }
+
+  .ad-progress__label {
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-progress__bar {
+    white-space: nowrap;
+    letter-spacing: 0;
+    font-feature-settings: 'liga' 0;
+  }
+
+  .ad-progress__value {
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    font-variant-numeric: tabular-nums;
+  }
+</style>

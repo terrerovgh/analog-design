@@ -1,0 +1,119 @@
+---
+/**
+ * SignalBar — labeled stepped horizontal bar.
+ *
+ * The "BANDWIDTH 980MBPS" / "POWER 92%" indicator. Rendered
+ * as discrete cells (no smooth fill) to keep the analog feel.
+ *
+ * @example
+ *   <SignalBar label="POWER"     value={92} unit="%"   />
+ *   <SignalBar label="BANDWIDTH" value={48} max={100} unit="MBPS" cells={20} />
+ *   <SignalBar label="LOAD"      value={87} critical />
+ */
+
+interface Props {
+  label: string;
+  value: number;
+  max?: number;
+  unit?: string;
+  cells?: number;
+  /** Renders the bar in signal/red when true */
+  critical?: boolean;
+}
+
+const {
+  label,
+  value,
+  max = 100,
+  unit,
+  cells = 16,
+  critical = false,
+} = Astro.props;
+
+const pct = Math.max(0, Math.min(1, value / max));
+const filled = Math.round(pct * cells);
+const empty  = cells - filled;
+---
+
+<div class:list={['ad-bar', critical && 'ad-bar--critical']}>
+  <div class="ad-bar__head">
+    <span class="ad-bar__label">{label}</span>
+    <span class="ad-bar__value">
+      {value}{unit && <span class="ad-bar__unit">{unit}</span>}
+    </span>
+  </div>
+
+  <div class="ad-bar__track" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={label}>
+    {Array.from({ length: filled }).map(() => <span class="ad-bar__cell ad-bar__cell--on" aria-hidden="true"></span>)}
+    {Array.from({ length: empty  }).map(() => <span class="ad-bar__cell ad-bar__cell--off" aria-hidden="true"></span>)}
+  </div>
+</div>
+
+<style>
+  .ad-bar {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+    font-family: var(--ad-font-mono);
+    color: var(--ad-ink);
+  }
+
+  .ad-bar__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+  }
+
+  .ad-bar__label {
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-bar__value {
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-tight);
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+
+  .ad-bar__unit {
+    font-size: var(--ad-text-2xs);
+    color: var(--ad-muted);
+    font-weight: var(--ad-weight-regular);
+  }
+
+  .ad-bar__track {
+    display: flex;
+    gap: 2px;
+    align-items: stretch;
+    height: 12px;
+  }
+
+  .ad-bar__cell {
+    flex: 1;
+    height: 100%;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  .ad-bar__cell--on  { background: var(--ad-ink); }
+  .ad-bar__cell--off { background: transparent; }
+
+  .ad-bar--critical .ad-bar__value,
+  .ad-bar--critical .ad-bar__unit {
+    color: var(--ad-signal);
+  }
+  .ad-bar--critical .ad-bar__cell {
+    border-color: var(--ad-signal);
+  }
+  .ad-bar--critical .ad-bar__cell--on {
+    background: var(--ad-signal);
+  }
+</style>

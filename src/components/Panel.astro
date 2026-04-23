@@ -1,0 +1,165 @@
+---
+/**
+ * Panel — bracketed frame with header / body / footer slots.
+ *
+ * The structural workhorse of Analog Design. A panel is always
+ * delimited by visible corner brackets and a hairline rule.
+ * Headers carry an UPPERCASE channel name and an optional ID.
+ *
+ * @example
+ *   <Panel channel="ARCHIVE_LOG" id="EGH-9320" footer="ACCESS CONFIRMED">
+ *     <p>Decoding allocated data from node B43 …</p>
+ *   </Panel>
+ */
+
+interface Props {
+  channel?: string;
+  id?: string;
+  footer?: string;
+  /** Show the asian "noise" character watermark in the corner */
+  kana?: string;
+}
+
+const { channel, id, footer, kana } = Astro.props;
+---
+
+<section class="ad-panel">
+  <span class="ad-panel__bracket ad-panel__bracket--tl" aria-hidden="true"></span>
+  <span class="ad-panel__bracket ad-panel__bracket--tr" aria-hidden="true"></span>
+  <span class="ad-panel__bracket ad-panel__bracket--bl" aria-hidden="true"></span>
+  <span class="ad-panel__bracket ad-panel__bracket--br" aria-hidden="true"></span>
+
+  {kana && <span class="ad-panel__kana" aria-hidden="true">{kana}</span>}
+
+  {(channel || id) && (
+    <header class="ad-panel__head">
+      {channel && <span class="ad-panel__channel">// {channel}</span>}
+      {id && <span class="ad-panel__id">[{id}]</span>}
+    </header>
+  )}
+
+  <div class="ad-panel__body">
+    <slot />
+  </div>
+
+  {footer && (
+    <footer class="ad-panel__foot">
+      <hr class="ad-panel__rule" />
+      <span class="ad-panel__footText">{footer}</span>
+    </footer>
+  )}
+</section>
+
+<style>
+  .ad-panel {
+    --bracket-size: 10px;
+    --pad: var(--ad-space-5);
+    position: relative;
+    display: block;
+    padding: var(--pad);
+    background: var(--ad-paper);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    overflow: hidden;
+  }
+
+  /* Corner brackets — drawn with two borders, no SVG */
+  .ad-panel__bracket {
+    position: absolute;
+    width: var(--bracket-size);
+    height: var(--bracket-size);
+    pointer-events: none;
+  }
+  .ad-panel__bracket--tl {
+    top: 0; left: 0;
+    border-top:  var(--ad-border-bold) solid var(--ad-ink);
+    border-left: var(--ad-border-bold) solid var(--ad-ink);
+  }
+  .ad-panel__bracket--tr {
+    top: 0; right: 0;
+    border-top:   var(--ad-border-bold) solid var(--ad-ink);
+    border-right: var(--ad-border-bold) solid var(--ad-ink);
+  }
+  .ad-panel__bracket--bl {
+    bottom: 0; left: 0;
+    border-bottom: var(--ad-border-bold) solid var(--ad-ink);
+    border-left:   var(--ad-border-bold) solid var(--ad-ink);
+  }
+  .ad-panel__bracket--br {
+    bottom: 0; right: 0;
+    border-bottom: var(--ad-border-bold) solid var(--ad-ink);
+    border-right:  var(--ad-border-bold) solid var(--ad-ink);
+  }
+
+  .ad-panel__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--ad-space-4);
+    margin-bottom: var(--ad-space-4);
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .ad-panel__channel {
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    min-width: 0;
+  }
+
+  .ad-panel__kana {
+    position: absolute;
+    right: var(--ad-space-4);
+    bottom: var(--ad-space-4);
+    font-family: var(--ad-font-jp);
+    font-size: clamp(28px, 6vw, 42px);
+    line-height: 1;
+    color: var(--ad-graphite-3);
+    opacity: 0.45;
+    user-select: none;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ad-panel__id {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-flat);
+    color: var(--ad-muted);
+    white-space: nowrap;
+  }
+
+  .ad-panel__body {
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-snug);
+    position: relative;
+    z-index: 1;
+  }
+
+  .ad-panel__foot {
+    margin-top: var(--ad-space-4);
+    position: relative;
+    z-index: 1;
+  }
+
+  .ad-panel__rule {
+    border: 0;
+    border-top: var(--ad-border-hair) dotted var(--ad-graphite-5);
+    margin: 0 0 var(--ad-space-2);
+  }
+
+  .ad-panel__footText {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  @media (max-width: 560px) {
+    .ad-panel__head {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,605 @@
+---
+import Catalog         from '../layouts/Catalog.astro';
+import StatusBadge     from '../components/StatusBadge.astro';
+import IDTag           from '../components/IDTag.astro';
+import ChannelLabel    from '../components/ChannelLabel.astro';
+import KanaLabel       from '../components/KanaLabel.astro';
+import DataCluster     from '../components/DataCluster.astro';
+import MetricBlock     from '../components/MetricBlock.astro';
+import LogLine         from '../components/LogLine.astro';
+import SignalBar       from '../components/SignalBar.astro';
+import ProgressStepped from '../components/ProgressStepped.astro';
+import Crosshair       from '../components/Crosshair.astro';
+import Burst           from '../components/Burst.astro';
+import NodeMap         from '../components/NodeMap.astro';
+import Panel           from '../components/Panel.astro';
+import Terminal        from '../components/Terminal.astro';
+---
+
+<Catalog title="ANALOG_DESIGN — CATALOG" channel="CATALOG_INDEX">
+
+  <!-- HERO ===================================================== -->
+  <section class="hero">
+    <div class="hero__col hero__col--left">
+      <span class="hero__eyebrow">// DESIGN_SYSTEM — V0.2 — PHASE_02 / EXPANSION</span>
+      <h1 class="hero__title">
+        ANALOG<br />DESIGN
+        <span class="hero__kana">アナログ</span>
+      </h1>
+      <p class="hero__lede">
+        Interfaces that look like instruments — not apps. A monochrome,
+        brutalist component language for Astro. <strong>14 components</strong>
+        across badges, data, indicators, graphics and frames.
+      </p>
+      <div class="hero__badges">
+        <StatusBadge state="active"     id="7F-C2" />
+        <StatusBadge state="processing" id="2A-89" label="DECODING" />
+        <StatusBadge state="standby"    id="38-19" />
+        <StatusBadge state="offline"    id="EGH-9320" />
+        <StatusBadge state="error"      id="0x7B6A" label="CRITICAL" blink />
+      </div>
+    </div>
+
+    <div class="hero__col hero__col--right">
+      <div class="hero__crosses">
+        <Crosshair size={64} variant="target"  label="[NODE_B43]" />
+        <Crosshair size={64} variant="cross"   label="[ORIGIN]" />
+        <Crosshair size={64} variant="reticle" label="[FRAME]" />
+        <Burst     size={64} rays={16}         label="[BURST]" />
+      </div>
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- ============================================================
+       BADGES & LABELS
+       ============================================================ -->
+  <h2 class="part">▌ BADGES &amp; LABELS</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">01 — STATUS_BADGE</h3>
+      <span class="section__meta">stamped state with optional ID</span>
+    </header>
+
+    <div class="grid grid--inline">
+      <StatusBadge state="active"  id="7F-C2" />
+      <StatusBadge state="standby" />
+      <StatusBadge state="offline" id="025" />
+      <StatusBadge state="processing" label="UPLINK" />
+      <StatusBadge state="error"   id="0x7B6A" label="CRITICAL" blink />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">02 — ID_TAG</h3>
+      <span class="section__meta">compact code stamp, inline</span>
+    </header>
+
+    <div class="grid grid--inline">
+      <IDTag value="7F-C2" />
+      <IDTag value="0x7B6A" prefix="ID" />
+      <IDTag value="EGH-9320" prefix="NODE" boxed />
+      <IDTag value="04" prefix="CHANNEL" boxed />
+      <IDTag value="0000200372" prefix="INDEX" muted />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">03 — CHANNEL_LABEL</h3>
+      <span class="section__meta">scope marker with state dot</span>
+    </header>
+
+    <div class="grid grid--inline">
+      <ChannelLabel name="ARCHIVE_LOG" />
+      <ChannelLabel name="UPLINK"  state="live" />
+      <ChannelLabel name="MAIN_BUS" state="idle" />
+      <ChannelLabel name="LEGACY"  state="muted" />
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- ============================================================
+       TYPOGRAPHY
+       ============================================================ -->
+  <h2 class="part">▌ TYPOGRAPHY</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">04 — KANA_LABEL</h3>
+      <span class="section__meta">japanese stamp with latin annotation</span>
+    </header>
+
+    <div class="grid grid--inline grid--gap-lg" style="align-items:flex-end;">
+      <KanaLabel kana="稿"   latin="ARCHIVE" size="sm" />
+      <KanaLabel kana="再"   latin="REBOOT"  size="md" />
+      <KanaLabel kana="方式" latin="METHOD"  size="lg" />
+      <KanaLabel kana="信号" latin="SIGNAL"  size="xl" />
+      <KanaLabel kana="聞き耳" latin="LISTEN" direction="row" />
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- ============================================================
+       DATA
+       ============================================================ -->
+  <h2 class="part">▌ DATA</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">05 — DATA_CLUSTER</h3>
+      <span class="section__meta">boxed metric group</span>
+    </header>
+
+    <div class="grid">
+      <DataCluster
+        name="MODULE-B7"
+        code="0x7B6A"
+        metrics={[
+          { label: 'TEMP',    value: '27', unit: '°C' },
+          { label: 'POWER',   value: '68', unit: '%'  },
+          { label: 'CHANNEL', value: '04' },
+        ]}
+        footer="STABLE — UPTIME 18:42"
+      />
+      <DataCluster
+        name="EPOCH"
+        code="0038:9092"
+        metrics={[
+          { label: 'FIRMWARE',  value: '02.44' },
+          { label: 'TRANSFORM', value: '118.09' },
+          { label: 'VERIFY',    value: 'OK' },
+        ]}
+        footer="PASSED-CHECK — SUCCESS"
+      />
+      <DataCluster
+        name="DATACLUSTER"
+        metrics={[
+          { label: 'CORE',  value: '42', unit: '%'  },
+          { label: 'USAGE', value: '31', unit: '°C' },
+          { label: 'NODES', value: '12' },
+        ]}
+        footer="OPTIMIZED"
+      />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">06 — METRIC_BLOCK</h3>
+      <span class="section__meta">single hero metric</span>
+    </header>
+
+    <div class="grid grid--inline grid--gap-lg" style="align-items:flex-start;">
+      <MetricBlock value="0079" label="MODULE SYNC COMPLETE" code="0x00C4" />
+      <MetricBlock value="007"  label="VARIANT 033" />
+      <MetricBlock value="42"   unit="%" label="MEMORY USAGE" />
+      <MetricBlock value="009"  label="OUTPUT_A1 EXPORT READY" />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">07 — LOG_LINE</h3>
+      <span class="section__meta">timestamped entry, 5 levels</span>
+    </header>
+
+    <div class="logstream" role="list">
+      <LogLine time="18:42:03" level="ok"    message="MODULE B7 CAME ONLINE" id="0x7B6A" />
+      <LogLine time="18:42:04" level="info"  message="HANDSHAKE COMPLETED" />
+      <LogLine time="18:42:11" level="debug" message="CACHE WARMED — 1024 ENTRIES" />
+      <LogLine time="18:42:18" level="warn"  message="PACKET LOSS 0.3%" />
+      <LogLine time="18:42:55" level="err"   message="CRITICAL ERROR — STACK OVERFLOW" id="0x1D22" />
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- ============================================================
+       INDICATORS
+       ============================================================ -->
+  <h2 class="part">▌ INDICATORS</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">08 — SIGNAL_BAR</h3>
+      <span class="section__meta">stepped horizontal bar</span>
+    </header>
+
+    <div class="stack">
+      <SignalBar label="POWER"     value={92} unit="%" />
+      <SignalBar label="BANDWIDTH" value={48} max={100} unit="MBPS" cells={20} />
+      <SignalBar label="LATENCY"   value={12} max={50}  unit="ms" cells={20} />
+      <SignalBar label="LOAD"      value={87} unit="%"  critical />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">09 — PROGRESS_STEPPED</h3>
+      <span class="section__meta">block-character bar</span>
+    </header>
+
+    <div class="stack stack--gap-sm">
+      <ProgressStepped value={68} label="UPLOAD" />
+      <ProgressStepped value={92} label="DECODE" width={30} />
+      <ProgressStepped value={3}  max={10} unit="" label="STAGE" chars={['▰','▱']} />
+      <ProgressStepped value={42} label="MEMORY" chars={['■','·']} />
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- ============================================================
+       GRAPHICS
+       ============================================================ -->
+  <h2 class="part">▌ GRAPHICS</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">10 — CROSSHAIR</h3>
+      <span class="section__meta">SVG primitive · 4 variants</span>
+    </header>
+
+    <div class="grid grid--inline grid--gap-lg">
+      <Crosshair size={96} variant="cross"   label="[CROSS]" />
+      <Crosshair size={96} variant="target"  label="[TARGET]" />
+      <Crosshair size={96} variant="reticle" label="[RETICLE]" />
+      <Crosshair size={96} variant="burst"   label="[BURST]" />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">11 — BURST</h3>
+      <span class="section__meta">configurable radial graphic</span>
+    </header>
+
+    <div class="grid grid--inline grid--gap-lg" style="align-items:flex-end;">
+      <Burst rays={16} size={96}  label="[16-RAY]" />
+      <Burst rays={24} size={120} ringed label="[RINGED]" />
+      <Burst rays={36} size={140} origin="bottom" label="[HORIZON]" />
+      <Burst rays={20} size={120} origin="left"   label="[SIDE]" />
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">12 — NODE_MAP</h3>
+      <span class="section__meta">connected nodes</span>
+    </header>
+
+    <div class="stack">
+      <NodeMap nodes={[
+        { label: 'B43', state: 'active' },
+        { label: 'C09', state: 'active' },
+        { label: 'D17', state: 'active' },
+        { label: 'E25', state: 'active' },
+      ]} />
+
+      <NodeMap nodes={[
+        { label: 'NODE-01', state: 'active' },
+        { label: 'NODE-02', state: 'idle'   },
+        { label: 'NODE-03', state: 'offline' },
+        { label: 'NODE-04', state: 'idle'   },
+        { label: 'NODE-05', state: 'active' },
+      ]} />
+
+      <NodeMap size={16} nodes={[
+        { state: 'active' },
+        { state: 'active' },
+        { state: 'active' },
+        { state: 'active' },
+        { state: 'active' },
+        { state: 'active' },
+      ]} />
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- ============================================================
+       FRAMES
+       ============================================================ -->
+  <h2 class="part">▌ FRAMES</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">13 — PANEL</h3>
+      <span class="section__meta">bracketed frame with slots</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Panel channel="ARCHIVE_LOG" id="EGH-9320" footer="ACCESS CONFIRMED" kana="稿">
+        <p>
+          Decoding allocated data from <strong>NODE B43</strong>. Stream
+          rebuilt from cold storage; 0.3% packet loss within tolerance.
+          All checksums verified against the master ledger.
+        </p>
+        <p style="color:var(--ad-muted); margin-top: 12px;">
+          LOG_034.TXT — EXPORT/2026 — INDEX 0000200372
+        </p>
+      </Panel>
+
+      <Panel channel="SYSTEM_REBOOT" id="80-6B" footer="REBOOT — TARGET MAIN BUS" kana="再">
+        <div style="display:flex; gap:24px; align-items:flex-start;">
+          <Burst size={72} rays={20} ringed />
+          <div>
+            <p style="margin:0;"><strong>ALTERNATING SYSTEM</strong></p>
+            <p style="margin:4px 0 0; color:var(--ad-muted);">
+              REJECTED — ID 80-6B<br />
+              ERROR — 0x1D22<br />
+              YEAR // 2026
+            </p>
+          </div>
+        </div>
+      </Panel>
+    </div>
+  </section>
+
+  <hr class="ad-rule ad-rule--dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">14 — TERMINAL</h3>
+      <span class="section__meta">monospaced output container</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Terminal title="UPLINK_TRACE" status="ONLINE">
+        <LogLine time="18:42:03" level="ok"    message="MODULE B7 ONLINE" />
+        <LogLine time="18:42:04" level="info"  message="HANDSHAKE OK" />
+        <LogLine time="18:42:11" level="debug" message="CACHE WARMED" />
+        <LogLine time="18:42:18" level="warn"  message="PACKET LOSS 0.3%" />
+        <LogLine time="18:42:55" level="err"   message="STACK OVERFLOW" id="0x1D22" />
+      </Terminal>
+
+      <Terminal inverted title="ROOT_SHELL" prompt="$ " cursor>
+        <pre>./decode --target=node_b43 --verify
+[ok] handshake established
+[ok] manifest loaded — 1024 entries
+[ok] checksum 0x7B6A matched
+[ok] stream open</pre>
+      </Terminal>
+    </div>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <!-- COMPOSED EXAMPLE ========================================== -->
+  <h2 class="part">▌ COMPOSITION — DASHBOARD</h2>
+
+  <section class="section">
+    <Panel channel="MAIN_DASHBOARD" id="EGH-9320" footer="LIVE — SAMPLED EVERY 2S" kana="信号">
+      <div class="dash">
+        <div class="dash__hero">
+          <MetricBlock value="0079" label="ACTIVE NODES" code="0x00C4" />
+          <Burst size={88} rays={20} />
+        </div>
+
+        <div class="dash__bars">
+          <SignalBar label="POWER"     value={92} unit="%" />
+          <SignalBar label="BANDWIDTH" value={48} max={100} unit="MBPS" />
+          <SignalBar label="LOAD"      value={87} unit="%" critical />
+        </div>
+
+        <div class="dash__map">
+          <ChannelLabel name="NETWORK_MAP" state="live" />
+          <NodeMap nodes={[
+            { label: 'B43', state: 'active' },
+            { label: 'C09', state: 'active' },
+            { label: 'D17', state: 'idle'   },
+            { label: 'E25', state: 'offline'},
+            { label: 'F33', state: 'active' },
+          ]} />
+        </div>
+      </div>
+    </Panel>
+  </section>
+
+  <hr class="ad-rule" />
+
+  <footer class="end">
+    <span>END_OF_CATALOG</span>
+    <span>—</span>
+    <span>14 / 14 COMPONENTS</span>
+    <span>—</span>
+    <span>聞き耳</span>
+  </footer>
+
+</Catalog>
+
+<style>
+  /* ===== Hero ============================================== */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--ad-space-12);
+    padding: var(--ad-space-8) 0 var(--ad-space-12);
+    align-items: center;
+  }
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; gap: var(--ad-space-8); }
+  }
+  .hero__eyebrow {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    display: block;
+    margin-bottom: var(--ad-space-4);
+  }
+  .hero__title {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-3xl);
+    font-weight: var(--ad-weight-bold);
+    line-height: 0.95;
+    letter-spacing: var(--ad-track-tight);
+    margin: 0 0 var(--ad-space-6);
+  }
+  .hero__kana {
+    display: block;
+    font-family: var(--ad-font-jp);
+    font-size: var(--ad-text-md);
+    color: var(--ad-graphite-5);
+    letter-spacing: var(--ad-track-mega);
+    margin-top: var(--ad-space-2);
+  }
+  .hero__lede {
+    max-width: 52ch;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+    margin: 0 0 var(--ad-space-6);
+  }
+  .hero__badges { display: flex; flex-wrap: wrap; gap: var(--ad-space-2); }
+  .hero__crosses {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: var(--ad-space-6);
+    justify-content: end;
+  }
+
+  /* ===== Part header ===================================== */
+  .part {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-mega);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    margin: var(--ad-space-10) 0 0;
+    padding: var(--ad-space-2) 0;
+    border-top: var(--ad-border-bold) solid var(--ad-ink);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  /* ===== Sections ======================================== */
+  .section { padding: var(--ad-space-8) 0; }
+
+  .section__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-4);
+    margin-bottom: var(--ad-space-6);
+  }
+  .section__title {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-md);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .section__meta {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  /* ===== Grids =========================================== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--ad-space-4);
+    align-items: start;
+  }
+  .grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: var(--ad-space-6);
+  }
+  .grid--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-3);
+    align-items: center;
+  }
+  .grid--gap-lg { gap: var(--ad-space-8); }
+
+  /* ===== Stack =========================================== */
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-4);
+    align-items: flex-start;
+  }
+  .stack--gap-sm { gap: var(--ad-space-2); }
+
+  /* ===== Logstream ======================================= */
+  .logstream {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--ad-space-3);
+    border: var(--ad-border-hair) dashed var(--ad-graphite-5);
+    background: rgba(0,0,0,0.015);
+  }
+
+  /* ===== Dashboard ====================================== */
+  .dash {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ad-space-6);
+    align-items: start;
+  }
+  @media (max-width: 720px) { .dash { grid-template-columns: 1fr; } }
+
+  .dash__hero {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--ad-space-4);
+    border-bottom: var(--ad-border-hair) dotted var(--ad-graphite-5);
+  }
+
+  .dash__bars,
+  .dash__map {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+  }
+
+  /* ===== End ============================================ */
+  .end {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--ad-space-3);
+    padding: var(--ad-space-8) 0;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+  .end :nth-child(5) {
+    font-family: var(--ad-font-jp);
+    text-transform: none;
+  }
+</style>

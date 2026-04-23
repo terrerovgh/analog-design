@@ -1,0 +1,53 @@
+{
+  "name": "analog-design",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Analog Design — a brutalist, technical, monochrome design system inspired by industrial HUDs and archival micrographics.",
+  "license": "MIT",
+  "author": "terrerovgh",
+  "homepage": "https://terrerovgh.github.io/analog-design/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terrerovgh/analog-design.git"
+  },
+  "bugs": {
+    "url": "https://github.com/terrerovgh/analog-design/issues"
+  },
+  "files": [
+    "src/components",
+    "src/styles",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./src/components/index.ts",
+    "./components": "./src/components/index.ts",
+    "./components/*": "./src/components/*.astro",
+    "./styles/tokens.css": "./src/styles/tokens.css",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "check": "astro check",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "peerDependencies": {
+    "astro": "^6.1.9"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "astro": "^6.1.9",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "astro",
+    "design-system",
+    "analog",
+    "brutalist",
+    "monochrome",
+    "components"
+  ]
+}

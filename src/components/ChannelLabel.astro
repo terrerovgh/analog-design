@@ -1,0 +1,67 @@
+---
+/**
+ * ChannelLabel — `// CHANNEL_NAME` scope marker.
+ *
+ * Denotes a stream, scope, or section. Optional dot indicator
+ * shows whether the channel is live, idle, or muted.
+ *
+ * @example
+ *   <ChannelLabel name="ARCHIVE_LOG" />
+ *   <ChannelLabel name="UPLINK" state="live" />
+ *   <ChannelLabel name="LEGACY" state="muted" />
+ */
+
+type State = 'live' | 'idle' | 'muted';
+
+interface Props {
+  name: string;
+  state?: State;
+  prefix?: string;
+}
+
+const { name, state, prefix = '//' } = Astro.props;
+---
+
+<span class:list={['ad-channel', state && `ad-channel--${state}`]}>
+  {state && (
+    <span class:list={['ad-channel__dot', state === 'live' && 'ad-blink']} aria-hidden="true"></span>
+  )}
+  <span class="ad-channel__prefix" aria-hidden="true">{prefix}</span>
+  <span class="ad-channel__name">{name}</span>
+</span>
+
+<style>
+  .ad-channel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-ink);
+    line-height: 1;
+  }
+
+  .ad-channel__prefix {
+    color: var(--ad-muted);
+    font-weight: var(--ad-weight-regular);
+  }
+
+  .ad-channel__name {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-channel__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ad-ink);
+    display: inline-block;
+  }
+
+  .ad-channel--live .ad-channel__dot   { background: var(--ad-signal); }
+  .ad-channel--idle .ad-channel__dot   { background: transparent; border: var(--ad-border-hair) solid var(--ad-ink); width: 5px; height: 5px; }
+  .ad-channel--muted .ad-channel__name { color: var(--ad-muted); font-weight: var(--ad-weight-regular); }
+  .ad-channel--muted .ad-channel__dot  { background: var(--ad-muted); }
+</style>

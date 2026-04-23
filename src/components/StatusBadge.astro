@@ -1,0 +1,129 @@
+---
+/**
+ * StatusBadge — labeled state with optional ID code.
+ *
+ * The core "ACTIVE / OFFLINE / STANDBY / ERROR" stamp from the
+ * Analog Design language. Always uppercase, always monospaced,
+ * always with a hairline rule.
+ *
+ * @example
+ *   <StatusBadge state="active" id="7F-C2" />
+ *   <StatusBadge state="error"  id="0x7B6A" label="CRITICAL ERROR" />
+ *   <StatusBadge state="offline" />
+ */
+
+type State = 'active' | 'standby' | 'offline' | 'error' | 'processing';
+
+interface Props {
+  state: State;
+  id?: string;
+  label?: string;
+  blink?: boolean;
+}
+
+const { state, id, label, blink = false } = Astro.props;
+
+const defaultLabels: Record<State, string> = {
+  active:     'ACTIVE',
+  standby:    'STANDBY',
+  offline:    'OFFLINE',
+  error:      'ERROR',
+  processing: 'PROCESSING',
+};
+
+const display = (label ?? defaultLabels[state]).toUpperCase();
+---
+
+<span class:list={['ad-badge', `ad-badge--${state}`]} data-state={state}>
+  <span class:list={['ad-badge__dot', blink && 'ad-blink']} aria-hidden="true"></span>
+  <span class="ad-badge__label">{display}</span>
+  {id && (
+    <>
+      <span class="ad-badge__sep" aria-hidden="true">—</span>
+      <span class="ad-badge__id">ID&nbsp;{id}</span>
+    </>
+  )}
+</span>
+
+<style>
+  .ad-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ad-space-2);
+    padding: var(--ad-space-1) var(--ad-space-2);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--ad-ink);
+    background: transparent;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .ad-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ad-ink);
+    flex-shrink: 0;
+  }
+
+  .ad-badge__label {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-badge__sep {
+    color: var(--ad-muted);
+    margin: 0 -2px;
+  }
+
+  .ad-badge__id {
+    color: var(--ad-muted);
+    font-weight: var(--ad-weight-regular);
+  }
+
+  /* States — only ERROR uses Signal accent */
+  .ad-badge--active .ad-badge__dot {
+    background: var(--ad-ink);
+  }
+
+  .ad-badge--standby {
+    color: var(--ad-graphite-7);
+    border-color: var(--ad-graphite-7);
+  }
+  .ad-badge--standby .ad-badge__dot {
+    background: transparent;
+    border: var(--ad-border-hair) solid var(--ad-graphite-7);
+    width: 5px;
+    height: 5px;
+  }
+
+  .ad-badge--offline {
+    color: var(--ad-graphite-5);
+    border-color: var(--ad-graphite-5);
+    border-style: dashed;
+  }
+  .ad-badge--offline .ad-badge__dot {
+    background: var(--ad-graphite-5);
+  }
+
+  .ad-badge--error {
+    color: var(--ad-signal);
+    border-color: var(--ad-signal);
+  }
+  .ad-badge--error .ad-badge__dot {
+    background: var(--ad-signal);
+  }
+  .ad-badge--error .ad-badge__sep,
+  .ad-badge--error .ad-badge__id {
+    color: var(--ad-signal);
+  }
+
+  .ad-badge--processing .ad-badge__dot {
+    background: var(--ad-ink);
+    animation: ad-blink 0.6s var(--ad-ease-step) infinite;
+  }
+</style>

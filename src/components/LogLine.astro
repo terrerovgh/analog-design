@@ -1,0 +1,93 @@
+---
+/**
+ * LogLine — single timestamped log entry.
+ *
+ * The "[18:42] OFFLINE — RELAY LINK" line. Stack many of these
+ * inside a Terminal component, or use standalone in dense lists.
+ *
+ * @example
+ *   <LogLine time="18:42:03" level="ok"   message="MODULE B7 CAME ONLINE" id="0x7B6A" />
+ *   <LogLine time="18:42:18" level="warn" message="PACKET LOSS 0.3%" />
+ *   <LogLine time="18:42:55" level="err"  message="CRITICAL ERROR" id="0x1D22" />
+ */
+
+type Level = 'info' | 'ok' | 'warn' | 'err' | 'debug';
+
+interface Props {
+  time?: string;
+  level?: Level;
+  message: string;
+  id?: string;
+}
+
+const { time, level = 'info', message, id } = Astro.props;
+
+const levelLabels: Record<Level, string> = {
+  info:  'INFO',
+  ok:    'OK',
+  warn:  'WARN',
+  err:   'ERR',
+  debug: 'DBG',
+};
+---
+
+<div class:list={['ad-log', `ad-log--${level}`]} role="listitem">
+  {time && <span class="ad-log__time">[{time}]</span>}
+  <span class="ad-log__level">{levelLabels[level]}</span>
+  <span class="ad-log__sep" aria-hidden="true">━━</span>
+  <span class="ad-log__msg">{message}</span>
+  {id && <span class="ad-log__id">— {id}</span>}
+</div>
+
+<style>
+  .ad-log {
+    display: flex;
+    align-items: baseline;
+    gap: var(--ad-space-2);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    line-height: 1.5;
+    color: var(--ad-ink);
+    letter-spacing: var(--ad-track-flat);
+    flex-wrap: wrap;
+  }
+
+  .ad-log__time {
+    color: var(--ad-muted);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .ad-log__level {
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    min-width: 36px;
+    flex-shrink: 0;
+  }
+
+  .ad-log__sep {
+    color: var(--ad-graphite-3);
+    flex-shrink: 0;
+  }
+
+  .ad-log__msg {
+    text-transform: uppercase;
+    letter-spacing: var(--ad-track-wide);
+  }
+
+  .ad-log__id {
+    color: var(--ad-muted);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Levels */
+  .ad-log--ok    .ad-log__level { color: var(--ad-ink); }
+  .ad-log--info  .ad-log__level { color: var(--ad-graphite-7); }
+  .ad-log--warn  .ad-log__level { color: var(--ad-ink); border-bottom: var(--ad-border-hair) solid var(--ad-ink); }
+  .ad-log--err   .ad-log__level,
+  .ad-log--err   .ad-log__msg,
+  .ad-log--err   .ad-log__id    { color: var(--ad-signal); }
+  .ad-log--debug .ad-log__level,
+  .ad-log--debug .ad-log__msg   { color: var(--ad-graphite-5); }
+</style>

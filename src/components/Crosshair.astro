@@ -1,0 +1,113 @@
+---
+/**
+ * Crosshair — pure SVG primitive used as visual anchor or marker.
+ *
+ * Variants reproduce the crosshair, target, and burst marks
+ * from the Analog Design source plate. No fill, hairline strokes.
+ *
+ * @example
+ *   <Crosshair size={48} variant="target"   label="[NODE]" />
+ *   <Crosshair size={32} variant="cross"    />
+ *   <Crosshair size={64} variant="burst"    />
+ *   <Crosshair size={48} variant="reticle"  />
+ */
+
+type Variant = 'cross' | 'target' | 'reticle' | 'burst';
+
+interface Props {
+  size?: number;
+  variant?: Variant;
+  label?: string;
+  stroke?: number;
+}
+
+const {
+  size = 48,
+  variant = 'cross',
+  label,
+  stroke = 1,
+} = Astro.props;
+
+const c = size / 2;          // center
+const r = size / 2 - stroke; // outer radius
+---
+
+<figure class="ad-cross" style={`--ad-cross-size:${size}px;`}>
+  <svg
+    width={size}
+    height={size}
+    viewBox={`0 0 ${size} ${size}`}
+    role="img"
+    aria-label={label ?? `crosshair ${variant}`}
+    fill="none"
+    stroke="currentColor"
+    stroke-width={stroke}
+  >
+    {variant === 'cross' && (
+      <>
+        <line x1={c} y1="0"  x2={c} y2={size} />
+        <line x1="0" y1={c}  x2={size} y2={c} />
+        <circle cx={c} cy={c} r={size / 8} />
+      </>
+    )}
+
+    {variant === 'target' && (
+      <>
+        <circle cx={c} cy={c} r={r} />
+        <circle cx={c} cy={c} r={r * 0.55} />
+        <circle cx={c} cy={c} r={1.5} fill="currentColor" />
+        <line x1={c} y1="0" x2={c} y2={size * 0.18} />
+        <line x1={c} y1={size * 0.82} x2={c} y2={size} />
+        <line x1="0" y1={c} x2={size * 0.18} y2={c} />
+        <line x1={size * 0.82} y1={c} x2={size} y2={c} />
+      </>
+    )}
+
+    {variant === 'reticle' && (
+      <>
+        <rect x={stroke / 2} y={stroke / 2} width={size - stroke} height={size - stroke} />
+        <line x1={c} y1={size * 0.15} x2={c} y2={size * 0.85} />
+        <line x1={size * 0.15} y1={c} x2={size * 0.85} y2={c} />
+        <circle cx={c} cy={c} r={size * 0.18} />
+      </>
+    )}
+
+    {variant === 'burst' && (
+      <>
+        {Array.from({ length: 12 }).map((_, i) => {
+          const a = (i * Math.PI * 2) / 12;
+          const x2 = c + Math.cos(a) * r;
+          const y2 = c + Math.sin(a) * r;
+          return <line x1={c} y1={c} x2={x2} y2={y2} />;
+        })}
+        <circle cx={c} cy={c} r={2} fill="currentColor" />
+      </>
+    )}
+  </svg>
+
+  {label && <figcaption class="ad-cross__label">{label}</figcaption>}
+</figure>
+
+<style>
+  .ad-cross {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ad-space-1);
+    margin: 0;
+    color: var(--ad-ink);
+  }
+
+  .ad-cross svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  .ad-cross__label {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+</style>

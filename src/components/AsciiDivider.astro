@@ -1,0 +1,131 @@
+---
+/**
+ * AsciiDivider — text-based section divider with optional label.
+ *
+ * Pure text (no SVG). Pattern repeats to fill width. The
+ * `scan` variant has an animated highlight band sweeping across.
+ *
+ * @example
+ *   <AsciiDivider />
+ *   <AsciiDivider variant="dotted" />
+ *   <AsciiDivider variant="double" label="SYSTEM_REBOOT" />
+ *   <AsciiDivider variant="scan"   label="LIVE" animated />
+ *   <AsciiDivider variant="ticker" label="MAIN_BUS — NODE EGH-9320 — VER 1.2" />
+ */
+
+type Variant = 'solid' | 'dotted' | 'double' | 'block' | 'scan' | 'ticker';
+
+interface Props {
+  variant?: Variant;
+  label?: string;
+  animated?: boolean;
+  /** Hint how many cells to render (CSS handles overflow) */
+  cells?: number;
+}
+
+const {
+  variant = 'solid',
+  label,
+  animated = false,
+  cells = 80,
+} = Astro.props;
+
+const patterns: Record<Variant, string> = {
+  solid:  '━',
+  dotted: '·',
+  double: '═',
+  block:  '░▒▓█▓▒',
+  scan:   '─',
+  ticker: '<',
+};
+
+const unit = patterns[variant];
+const fill = unit.repeat(Math.ceil(cells / unit.length)).slice(0, cells);
+---
+
+<div
+  class:list={[
+    'ad-divider',
+    `ad-divider--${variant}`,
+    animated && 'ad-divider--animated',
+    label && 'ad-divider--labeled',
+  ]}
+  role="separator"
+  aria-label={label ?? `divider ${variant}`}
+>
+  <span class="ad-divider__rail" aria-hidden="true">{fill}</span>
+  {label && (
+    <>
+      <span class="ad-divider__label">{label}</span>
+      <span class="ad-divider__rail" aria-hidden="true">{fill}</span>
+    </>
+  )}
+
+  {variant === 'scan' && animated && (
+    <span class="ad-divider__sweep" aria-hidden="true"></span>
+  )}
+</div>
+
+<style>
+  .ad-divider {
+    --rail-color: var(--ad-ink);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--ad-space-3);
+    width: 100%;
+    overflow: hidden;
+    color: var(--rail-color);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    line-height: 1;
+    letter-spacing: 0;
+    user-select: none;
+  }
+
+  .ad-divider__rail {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+
+  .ad-divider__label {
+    flex-shrink: 0;
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-ink);
+    padding: 0 var(--ad-space-1);
+  }
+
+  /* Variants */
+  .ad-divider--dotted { --rail-color: var(--ad-graphite-5); }
+  .ad-divider--double { --rail-color: var(--ad-ink); }
+  .ad-divider--block  { --rail-color: var(--ad-ink); }
+  .ad-divider--scan   { --rail-color: var(--ad-graphite-3); }
+
+  .ad-divider--ticker .ad-divider__rail {
+    color: var(--ad-graphite-5);
+  }
+
+  /* Animated scan — sweeping ink band */
+  .ad-divider__sweep {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--ad-ink) 30%,
+      var(--ad-ink) 70%,
+      transparent 100%
+    );
+    mix-blend-mode: difference;
+    animation: ad-scan var(--ad-dur-scan) var(--ad-ease-step12) infinite;
+    pointer-events: none;
+  }
+</style>

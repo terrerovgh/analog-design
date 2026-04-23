@@ -1,0 +1,174 @@
+---
+/**
+ * KeycapButton — physical key cap with mechanical depth.
+ *
+ * Depth simulated with offset borders (not shadows). On
+ * `:active` the cap visually depresses by collapsing the offset.
+ * Use `legend` for a tiny secondary label above (function row style).
+ *
+ * @example
+ *   <KeycapButton label="GO" />
+ *   <KeycapButton label="ENTER" wide legend="F-12" />
+ *   <KeycapButton label="ESC" inverted />
+ *   <KeycapButton label="REC" signal />
+ */
+
+interface Props {
+  label: string;
+  legend?: string;
+  wide?: boolean;
+  /** Render in ink-on-paper inverted scheme */
+  inverted?: boolean;
+  /** Use Signal accent for live/critical actions */
+  signal?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+  href?: string;
+  disabled?: boolean;
+}
+
+const {
+  label,
+  legend,
+  wide = false,
+  inverted = false,
+  signal = false,
+  type = 'button',
+  href,
+  disabled = false,
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  class:list={[
+    'ad-keycap',
+    wide && 'ad-keycap--wide',
+    inverted && 'ad-keycap--inverted',
+    signal && 'ad-keycap--signal',
+    disabled && 'ad-keycap--disabled',
+  ]}
+  type={!href ? type : undefined}
+  href={href}
+  disabled={!href ? disabled : undefined}
+  aria-disabled={disabled}
+>
+  <span class="ad-keycap__cap">
+    {legend && <span class="ad-keycap__legend">{legend}</span>}
+    <span class="ad-keycap__label">{label}</span>
+  </span>
+</Tag>
+
+<style>
+  .ad-keycap {
+    --offset: 4px;
+    display: inline-flex;
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    cursor: pointer;
+    text-decoration: none;
+    /* Reserve room for the offset shadow ply */
+    margin-right: var(--offset);
+    margin-bottom: var(--offset);
+    transition: transform var(--ad-dur-blink) var(--ad-ease-step);
+  }
+
+  /* The "back-plate" — drawn as a ::before */
+  .ad-keycap::before {
+    content: '';
+    position: absolute;
+    inset: var(--offset) calc(-1 * var(--offset)) calc(-1 * var(--offset)) var(--offset);
+    border: var(--ad-border-thin) solid var(--ad-ink);
+    background: var(--ad-paper);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .ad-keycap__cap {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 56px;
+    min-height: 44px;
+    padding: var(--ad-space-2) var(--ad-space-3);
+    border: var(--ad-border-thin) solid var(--ad-ink);
+    background: var(--ad-paper);
+    line-height: 1;
+    user-select: none;
+  }
+
+  .ad-keycap--wide .ad-keycap__cap { min-width: 120px; }
+
+  .ad-keycap__legend {
+    font-size: 9px;
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    margin-bottom: 2px;
+  }
+
+  .ad-keycap__label {
+    font-size: var(--ad-text-sm);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  /* Press state — cap moves into the offset, plate disappears */
+  .ad-keycap:hover .ad-keycap__cap {
+    background: var(--ad-graphite-1);
+  }
+
+  .ad-keycap:active {
+    transform: translate(var(--offset), var(--offset));
+  }
+  .ad-keycap:active::before {
+    inset: 0;
+  }
+
+  /* Inverted */
+  .ad-keycap--inverted .ad-keycap__cap {
+    background: var(--ad-ink);
+    color: var(--ad-paper);
+  }
+  .ad-keycap--inverted .ad-keycap__legend { color: var(--ad-graphite-3); }
+  .ad-keycap--inverted::before { background: var(--ad-ink); }
+
+  /* Signal — for critical / record / live actions */
+  .ad-keycap--signal {
+    color: var(--ad-signal);
+  }
+  .ad-keycap--signal .ad-keycap__cap,
+  .ad-keycap--signal::before {
+    border-color: var(--ad-signal);
+  }
+  .ad-keycap--signal .ad-keycap__legend { color: var(--ad-signal); opacity: 0.7; }
+
+  /* Disabled */
+  .ad-keycap--disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+  .ad-keycap--disabled:active {
+    transform: none;
+  }
+  .ad-keycap--disabled:active::before {
+    inset: var(--offset) calc(-1 * var(--offset)) calc(-1 * var(--offset)) var(--offset);
+  }
+
+  /* Focus ring — explicit hairline, not glow */
+  .ad-keycap:focus-visible {
+    outline: 0;
+  }
+  .ad-keycap:focus-visible .ad-keycap__cap {
+    outline: var(--ad-border-bold) solid var(--ad-ink);
+    outline-offset: 2px;
+  }
+</style>

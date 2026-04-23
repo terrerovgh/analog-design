@@ -1,0 +1,81 @@
+---
+/**
+ * MetricBlock — single large numeric readout.
+ *
+ * The "007" / "0079" / "009" stamp from the source plate.
+ * One value, one label. Use for hero stats or marquee KPIs.
+ *
+ * @example
+ *   <MetricBlock value="0079" label="MODULE SYNC COMPLETE" code="0x00C4" />
+ *   <MetricBlock value="007"  label="VARIANT" />
+ *   <MetricBlock value="42" unit="%" label="MEMORY USAGE" />
+ */
+
+interface Props {
+  value: string | number;
+  label: string;
+  unit?: string;
+  code?: string;
+  align?: 'left' | 'center';
+}
+
+const { value, label, unit, code, align = 'left' } = Astro.props;
+---
+
+<div class:list={['ad-metric', `ad-metric--${align}`]}>
+  <div class="ad-metric__valueRow">
+    <span class="ad-metric__value">{value}</span>
+    {unit && <span class="ad-metric__unit">{unit}</span>}
+  </div>
+  <span class="ad-metric__label">{label}</span>
+  {code && <span class="ad-metric__code">[{code}]</span>}
+</div>
+
+<style>
+  .ad-metric {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--ad-font-mono);
+    color: var(--ad-ink);
+    line-height: 1;
+  }
+
+  .ad-metric--center {
+    align-items: center;
+    text-align: center;
+  }
+
+  .ad-metric__valueRow {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .ad-metric__value {
+    font-size: var(--ad-text-3xl);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-tight);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-metric__unit {
+    font-size: var(--ad-text-md);
+    font-weight: var(--ad-weight-bold);
+    color: var(--ad-muted);
+  }
+
+  .ad-metric__label {
+    margin-top: 6px;
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-metric__code {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-flat);
+    color: var(--ad-muted);
+  }
+</style>

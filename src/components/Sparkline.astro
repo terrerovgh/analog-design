@@ -1,0 +1,186 @@
+---
+/**
+ * Sparkline — small inline trend chart.
+ *
+ * SVG polyline scaled to fit. Optional area fill, last-point
+ * marker, value readout. The `animated` flag draws the line
+ * with a steps-based stroke-dasharray reveal.
+ *
+ * @example
+ *   <Sparkline data={[12,18,9,22,30,28,40,35,48]} />
+ *   <Sparkline data={prices} label="EUR/USD" value="1.0892" delta="+0.4%" area />
+ *   <Sparkline data={signal} animated showMarker variant="step" />
+ */
+
+type Variant = 'line' | 'step' | 'area';
+
+interface Props {
+  data: number[];
+  width?: number;
+  height?: number;
+  variant?: Variant;
+  area?: boolean;
+  showMarker?: boolean;
+  animated?: boolean;
+  label?: string;
+  value?: string;
+  delta?: string;
+  /** When delta starts with '-', uses signal accent */
+  signal?: boolean;
+}
+
+const {
+  data,
+  width = 120,
+  height = 32,
+  variant = 'line',
+  area = false,
+  showMarker = false,
+  animated = false,
+  label,
+  value,
+  delta,
+  signal = false,
+} = Astro.props;
+
+const min = Math.min(...data);
+const max = Math.max(...data);
+const range = max - min || 1;
+const step = data.length > 1 ? width / (data.length - 1) : 0;
+
+// Build points
+const pts = data.map((v, i) => {
+  const x = i * step;
+  const y = height - ((v - min) / range) * height;
+  return { x, y };
+});
+
+// Build polyline / step path
+let pathD = '';
+if (variant === 'step') {
+  pathD = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`;
+    const prev = pts[i - 1];
+    return `${acc} L ${p.x} ${prev.y} L ${p.x} ${p.y}`;
+  }, '');
+} else {
+  pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+}
+
+// Area path closes back to baseline
+const areaD = `${pathD} L ${width} ${height} L 0 ${height} Z`;
+
+// Last point for marker
+const last = pts[pts.length - 1];
+
+const deltaIsNegative = delta?.trim().startsWith('-');
+const useSignal = signal || deltaIsNegative;
+---
+
+<div class:list={['ad-spark', useSignal && 'ad-spark--signal']}>
+  {(label || value || delta) && (
+    <div class="ad-spark__head">
+      {label && <span class="ad-spark__label">{label}</span>}
+      {value && <span class="ad-spark__value">{value}</span>}
+      {delta && <span class="ad-spark__delta">{delta}</span>}
+    </div>
+  )}
+
+  <svg
+    class:list={['ad-spark__svg', animated && 'ad-spark__svg--animated']}
+    width={width}
+    height={height}
+    viewBox={`0 0 ${width} ${height}`}
+    preserveAspectRatio="none"
+    role="img"
+    aria-label={label ?? 'sparkline'}
+  >
+    {/* baseline */}
+    <line x1="0" y1={height - 0.5} x2={width} y2={height - 0.5}
+      stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="2 2" />
+
+    {(area || variant === 'area') && (
+      <path d={areaD} fill="currentColor" fill-opacity="0.08" stroke="none" />
+    )}
+
+    <path
+      d={pathD}
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linejoin="miter"
+      stroke-linecap="square"
+      style={animated ? `--ad-stream-length:${width * 2};` : ''}
+    />
+
+    {showMarker && (
+      <>
+        <line
+          x1={last.x}
+          y1="0"
+          x2={last.x}
+          y2={height}
+          stroke="currentColor"
+          stroke-width="0.5"
+          stroke-dasharray="1 2"
+        />
+        <rect x={last.x - 2.5} y={last.y - 2.5} width="5" height="5"
+          fill="var(--ad-paper)" stroke="currentColor" stroke-width="1" />
+      </>
+    )}
+  </svg>
+</div>
+
+<style>
+  .ad-spark {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    line-height: 1;
+  }
+
+  .ad-spark--signal {
+    color: var(--ad-signal);
+  }
+
+  .ad-spark__head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--ad-space-2);
+  }
+
+  .ad-spark__label {
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-spark__value {
+    font-size: var(--ad-text-sm);
+    font-weight: var(--ad-weight-bold);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--ad-track-tight);
+  }
+
+  .ad-spark__delta {
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    color: currentColor;
+  }
+
+  .ad-spark__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+    overflow: visible;
+  }
+
+  .ad-spark__svg--animated path {
+    stroke-dasharray: var(--ad-stream-length, 200);
+    stroke-dashoffset: var(--ad-stream-length, 200);
+    animation: ad-stream var(--ad-dur-orbit) var(--ad-ease-step24) forwards;
+  }
+</style>

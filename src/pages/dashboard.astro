@@ -1,0 +1,562 @@
+---
+import Catalog         from '../layouts/Catalog.astro';
+import Panel           from '../components/Panel.astro';
+import StatusBadge     from '../components/StatusBadge.astro';
+import ChannelLabel    from '../components/ChannelLabel.astro';
+import MetricBlock     from '../components/MetricBlock.astro';
+import DataCluster     from '../components/DataCluster.astro';
+import SignalBar       from '../components/SignalBar.astro';
+import ProgressStepped from '../components/ProgressStepped.astro';
+import Sparkline       from '../components/Sparkline.astro';
+import Oscilloscope    from '../components/Oscilloscope.astro';
+import BusinessChart   from '../components/BusinessChart.astro';
+import ProcessFlow     from '../components/ProcessFlow.astro';
+import NetworkGraph    from '../components/NetworkGraph.astro';
+import Terminal        from '../components/Terminal.astro';
+import LogLine         from '../components/LogLine.astro';
+import AsciiDivider    from '../components/AsciiDivider.astro';
+import KanaLabel       from '../components/KanaLabel.astro';
+import KeycapButton    from '../components/KeycapButton.astro';
+
+const reviewChecks = [
+  ['Hierarchy', 'ok', 'One dominant KPI band, one monitoring band, one trace band.'],
+  ['Signal Usage', 'ok', 'Accent reserved for alerts, faults, live states and abort actions only.'],
+  ['Density', 'ok', 'High information density, but grouped into clear operator zones.'],
+  ['Motion', 'ok', 'Animation limited to scanning telemetry; no decorative movement in critical metrics.'],
+  ['State Text', 'ok', 'Every live or degraded area carries an explicit textual state.'],
+  ['Responsiveness', 'ok', 'Dashboard collapses into stacked operator panels below tablet widths.'],
+  ['Accessibility', 'warn', 'Strong structure and labels; still requires contrast and keyboard QA per deployment.'],
+] as const;
+
+const scorecards = [
+  { label: 'UPLINK', value: '99.94', unit: '%', code: 'SYNC' },
+  { label: 'NODES', value: '024', code: 'LIVE' },
+  { label: 'QUEUE', value: '018', code: 'WAIT' },
+];
+
+const telemetryA = [44, 46, 45, 49, 52, 51, 55, 58, 56, 60, 64, 66];
+const telemetryB = [16, 18, 21, 19, 24, 22, 28, 30, 29, 31, 34, 33];
+const telemetryC = [78, 76, 79, 81, 80, 83, 85, 84, 86, 88, 87, 89];
+
+const throughputLabels = ['00','04','08','12','16','20'];
+const throughputSeries = [
+  { name: 'INGEST', data: [120, 164, 152, 188, 210, 236] },
+  { name: 'EMIT',   data: [ 90, 118, 124, 142, 168, 190] },
+];
+
+const flowSteps = [
+  { label: 'CAPTURE',   code: 'D-01', state: 'done'    as const },
+  { label: 'NORMALIZE', code: 'D-02', state: 'done'    as const },
+  { label: 'VERIFY',    code: 'D-03', state: 'active'  as const },
+  { label: 'PUBLISH',   code: 'D-04', state: 'pending' as const },
+];
+
+const networkNodes = [
+  { id: 'GW-A', x: 10, y: 52, state: 'active' as const, kind: 'gateway' as const },
+  { id: 'ETL',  x: 28, y: 24, state: 'active' as const, kind: 'hub' as const },
+  { id: 'OPS',  x: 28, y: 78, state: 'active' as const },
+  { id: 'B43',  x: 52, y: 18, state: 'active' as const },
+  { id: 'C09',  x: 52, y: 52, state: 'idle'   as const },
+  { id: 'D17',  x: 52, y: 86, state: 'down'   as const },
+  { id: 'EDGE', x: 84, y: 48, state: 'active' as const, kind: 'gateway' as const },
+];
+
+const networkEdges = [
+  { a: 0, b: 1 },
+  { a: 0, b: 2 },
+  { a: 1, b: 3 },
+  { a: 1, b: 4, flow: 'both' as const },
+  { a: 2, b: 4 },
+  { a: 2, b: 5 },
+  { a: 3, b: 6 },
+  { a: 4, b: 6, flow: 'both' as const },
+  { a: 5, b: 6 },
+];
+
+const rules = [
+  'Lead with 3 to 5 mission KPIs. Anything beyond that belongs in secondary telemetry.',
+  'Group metrics by operator task: health, throughput, topology, alerts, controls.',
+  'Reserve `signal` orange for abnormality, live recording, operator confirmation, or abort.',
+  'Pair every chart or graph with a textual label, unit, and explicit status line.',
+  'Use motion only where it helps detect change. Freeze decorative movement in dense views.',
+  'Collapse to a single reading column on mobile; never preserve desktop mosaics on small screens.',
+];
+
+const antiPatterns = [
+  'Do not promote all panels to equal visual weight. Dashboards need one clear scan path.',
+  'Do not use kana marks as labels for operational data. Treat them as secondary texture only.',
+  'Do not mix more than one accent color in the same control room surface.',
+  'Do not hide degraded states inside charts without a matching `ERROR`, `DOWN`, or `WAIT` text cue.',
+];
+---
+
+<Catalog
+  title="ANALOG_DESIGN — DASHBOARD SPEC"
+  description="Dashboard composition guide for Analog Design: review criteria, best practices, and a production-style specimen built from the component system."
+  channel="DASHBOARD_SPEC"
+>
+  <section class="hero">
+    <div class="hero__copy">
+      <span class="hero__eyebrow">// PATTERN_GUIDE — OPERATOR_DASHBOARD — SPEC_01</span>
+      <h1 class="hero__title">
+        DASHBOARD<br />SPEC
+        <span class="hero__kana">監視盤</span>
+      </h1>
+      <p class="hero__lede">
+        A validated dashboard composition pattern for Analog Design. This page turns the component
+        catalog into an operator surface with hierarchy, state clarity, restrained motion and
+        explicit information zoning.
+      </p>
+      <div class="hero__chips">
+        <StatusBadge state="active" label="VALIDATED" id="SPEC-01" />
+        <StatusBadge state="processing" label="LIVE_RULESET" id="OPS-42" />
+        <StatusBadge state="standby" label="MOBILE_READY" id="RWD" />
+      </div>
+    </div>
+
+    <Panel channel="DESIGN_REVIEW" id="SPEC-01" footer="AUDIT_SCOPE — HIERARCHY / DENSITY / MOTION / STATE" kana="監">
+      <div class="review">
+        {reviewChecks.map(([label, state, text]) => (
+          <div class="review__item">
+            <StatusBadge
+              state={state === 'warn' ? 'standby' : 'active'}
+              label={state === 'warn' ? 'CHECK' : 'PASS'}
+            />
+            <div class="review__text">
+              <strong>{label}</strong>
+              <span>{text}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="double" label="BEST_PRACTICE_RULESET" />
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Design Validation</h2>
+      <span class="section__meta">What a production dashboard should satisfy</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Panel channel="COMPOSITION_RULES" id="LAYOUT" footer="PRIMARY → SECONDARY → DIAGNOSTIC" kana="構">
+        <div class="rulelist">
+          {rules.map((rule, i) => (
+            <div class="rulelist__item">
+              <span class="rulelist__index">{String(i + 1).padStart(2, '0')}</span>
+              <span>{rule}</span>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel channel="ANTI_PATTERNS" id="RISK" footer="REMOVE_AMBIGUITY_AT_COMPOSITION_LEVEL" kana="禁">
+        <div class="rulelist">
+          {antiPatterns.map((rule, i) => (
+            <div class="rulelist__item rulelist__item--warn">
+              <span class="rulelist__index">{String(i + 1).padStart(2, '0')}</span>
+              <span>{rule}</span>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  </section>
+
+  <AsciiDivider variant="solid" label="COMPONENT_MAP_FOR_DASHBOARDS" />
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Recommended Component Roles</h2>
+      <span class="section__meta">Use components by operator job, not just visual taste</span>
+    </header>
+
+    <div class="grid grid--3">
+      <DataCluster
+        name="PRIMARY KPIS"
+        code="ROLE-01"
+        metrics={[
+          { label: 'USE', value: 'MetricBlock' },
+          { label: 'AUX', value: 'DataCluster' },
+          { label: 'RULE', value: '3-5 MAX' },
+        ]}
+        footer="HERO NUMBERS ONLY"
+      />
+      <DataCluster
+        name="ALERTS + LOGS"
+        code="ROLE-02"
+        metrics={[
+          { label: 'USE', value: 'StatusBadge' },
+          { label: 'AUX', value: 'Terminal' },
+          { label: 'RULE', value: 'TEXT FIRST' },
+        ]}
+        footer="STATE MUST BE EXPLICIT"
+      />
+      <DataCluster
+        name="TRENDS + FLOWS"
+        code="ROLE-03"
+        metrics={[
+          { label: 'USE', value: 'Sparkline' },
+          { label: 'AUX', value: 'NetworkGraph' },
+          { label: 'RULE', value: 'LABEL + UNIT' },
+        ]}
+        footer="NO NAKED CHARTS"
+      />
+    </div>
+  </section>
+
+  <AsciiDivider variant="double" label="SPECIMEN_DASHBOARD" />
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Dashboard Specimen</h2>
+      <span class="section__meta">Reference composition for operations, telemetry and incident handling</span>
+    </header>
+
+    <Panel channel="CONTROL_ROOM_ALPHA" id="DASH-2026" footer="SCAN_ORDER — KPI / HEALTH / FLOW / ALERTS / TOPOLOGY" kana="制">
+      <div class="spec">
+        <div class="spec__top">
+          <div class="spec__title">
+            <ChannelLabel name="GROUND_CONTROL" state="live" />
+            <KanaLabel kana="監視" latin="MONITOR" size="lg" direction="row" />
+          </div>
+          <div class="spec__status">
+            <StatusBadge state="active" label="UPLINK OK" id="A-17" />
+            <StatusBadge state="processing" label="VERIFYING" id="D-03" />
+            <StatusBadge state="error" label="NODE DOWN" id="D17" blink />
+          </div>
+        </div>
+
+        <div class="spec__metrics">
+          {scorecards.map((card) => (
+            <MetricBlock value={card.value} unit={card.unit} label={card.label} code={card.code} />
+          ))}
+        </div>
+
+        <div class="spec__middle">
+          <Panel channel="SYSTEM_HEALTH" id="OPS-A" footer="USE BARS FOR CAPACITY, NOT FOR STATUS" kana="健">
+            <div class="stack">
+              <SignalBar label="POWER" value={92} unit="%" />
+              <SignalBar label="THERMAL HEADROOM" value={64} unit="%" />
+              <SignalBar label="QUEUE PRESSURE" value={81} unit="%" critical />
+              <ProgressStepped value={3} max={4} unit="" label="VERIFY STAGE" chars={['■', '·']} />
+            </div>
+          </Panel>
+
+          <Panel channel="TELEMETRY" id="TRACE" footer="PAIR TREND WITH CURRENT VALUE AND DIRECTION" kana="波">
+            <div class="telemetry">
+              <Sparkline data={telemetryA} label="THROUGHPUT" value="236 MBPS" delta="+12.4%" animated showMarker area />
+              <Sparkline data={telemetryB} label="FAULT RATE" value="33 PPM" delta="+2.1%" animated showMarker signal />
+              <Sparkline data={telemetryC} label="UPTIME" value="89 HRS" delta="+1.4%" animated />
+              <Oscilloscope wave="square" label="CARRIER_A" width={320} height={116} frequency={3} amplitude={0.55} />
+            </div>
+          </Panel>
+        </div>
+
+        <div class="spec__middle">
+          <Panel channel="THROUGHPUT_PROFILE" id="AREA-7" footer="STACKED BY TASK, NOT BY DECORATION" kana="量">
+            <BusinessChart
+              type="line"
+              title="HOURLY_BANDWIDTH"
+              code="MBPS"
+              labels={throughputLabels}
+              series={throughputSeries}
+              height={220}
+            />
+          </Panel>
+
+          <Panel channel="WORKFLOW" id="ETL" footer="PROCESS STATE MUST BE READABLE WITHOUT MOTION" kana="流">
+            <div class="workflow">
+              <ProcessFlow title="DISTRIBUTION_PIPE" steps={flowSteps} />
+              <div class="workflow__actions">
+                <KeycapButton label="ARM" />
+                <KeycapButton label="SYNC" inverted />
+                <KeycapButton label="ABORT" signal />
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        <div class="spec__bottom">
+          <Panel channel="ALERT_STREAM" id="LOG-9" footer="PUT CRITICAL TEXT IN THE RIGHTMOST THIRD OF THE SCAN" kana="警">
+            <Terminal title="EVENT_LOG" status="DEGRADED">
+              <LogLine time="18:42:03" level="ok" message="UPLINK A STABILIZED" />
+              <LogLine time="18:42:09" level="warn" message="RETRY WINDOW EXPANDED TO 320MS" />
+              <LogLine time="18:42:15" level="err" message="NODE D17 OFFLINE" id="0xD17" />
+              <LogLine time="18:42:21" level="info" message="FAILOVER ROUTE ENGAGED" />
+            </Terminal>
+          </Panel>
+
+          <Panel channel="TOPOLOGY" id="NET-4" footer="GRAPH IS DIAGNOSTIC, NEVER THE ONLY SOURCE OF TRUTH" kana="網">
+            <NetworkGraph
+              title="GROUND_MESH"
+              nodes={networkNodes}
+              edges={networkEdges}
+              width={620}
+              height={250}
+              packetSpeed={2200}
+            />
+          </Panel>
+        </div>
+      </div>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="solid" label="IMPLEMENTATION_NOTES" />
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Dashboard Recipe</h2>
+      <span class="section__meta">A compact blueprint for building new operator surfaces</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Terminal title="LAYOUT_SEQUENCE" prompt="> " cursor>
+        <pre>1. Define operator goal
+2. Select 3-5 primary KPIs
+3. Group secondary telemetry by task
+4. Add explicit alert stream
+5. Add diagnostic graph last
+6. Reduce decorative motion
+7. Collapse to one column on mobile</pre>
+      </Terminal>
+
+      <Panel channel="DOC_SUMMARY" id="OPS-GUIDE" footer="PATTERN READY FOR REUSE" kana="記">
+        <div class="summary">
+          <p>
+            Use this dashboard pattern when the interface must support monitoring, triage and fast
+            operator scanning. The system works best when one row answers “what matters now”, the
+            next answers “what is changing”, and the last answers “what broke and where”.
+          </p>
+          <p>
+            Keep the composition dry: metrics first, traces second, logs third, topology last.
+            That order matches operator behavior better than a symmetric card grid.
+          </p>
+        </div>
+      </Panel>
+    </div>
+  </section>
+</Catalog>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: var(--ad-space-8);
+    align-items: start;
+    padding: var(--ad-space-8) 0 var(--ad-space-10);
+  }
+
+  .hero__eyebrow,
+  .section__meta,
+  .section__title,
+  .rulelist__index {
+    font-family: var(--ad-font-mono);
+    text-transform: uppercase;
+  }
+
+  .hero__eyebrow {
+    display: block;
+    margin-bottom: var(--ad-space-4);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    color: var(--ad-muted);
+  }
+
+  .hero__title {
+    margin: 0 0 var(--ad-space-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-3xl);
+    line-height: 0.94;
+    letter-spacing: var(--ad-track-tight);
+  }
+
+  .hero__kana {
+    display: block;
+    margin-top: var(--ad-space-2);
+    font-family: var(--ad-font-jp);
+    font-size: var(--ad-text-md);
+    letter-spacing: var(--ad-track-mega);
+    color: var(--ad-muted);
+  }
+
+  .hero__lede {
+    max-width: 58ch;
+    margin: 0 0 var(--ad-space-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .hero__chips,
+  .spec__status,
+  .workflow__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-2);
+  }
+
+  .review {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+  }
+
+  .review__item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--ad-space-3);
+    align-items: start;
+  }
+
+  .review__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--ad-text-xs);
+    color: var(--ad-graphite-7);
+  }
+
+  .review__text strong {
+    font-size: var(--ad-text-sm);
+    color: var(--ad-ink);
+  }
+
+  .section {
+    padding: var(--ad-space-8) 0;
+  }
+
+  .section__head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ad-space-4);
+    align-items: baseline;
+    margin-bottom: var(--ad-space-6);
+  }
+
+  .section__title {
+    margin: 0;
+    font-size: var(--ad-text-md);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+  }
+
+  .section__meta {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    color: var(--ad-muted);
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--ad-space-6);
+  }
+
+  .grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+
+  .grid--3 {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .stack,
+  .telemetry,
+  .workflow {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-4);
+  }
+
+  .rulelist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+  }
+
+  .rulelist__item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--ad-space-3);
+    align-items: start;
+    font-size: var(--ad-text-xs);
+    line-height: var(--ad-leading-prose);
+  }
+
+  .rulelist__item--warn {
+    color: var(--ad-graphite-7);
+  }
+
+  .rulelist__index {
+    color: var(--ad-muted);
+    letter-spacing: var(--ad-track-wide);
+    font-size: var(--ad-text-2xs);
+  }
+
+  .spec {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-6);
+  }
+
+  .spec__top {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ad-space-4);
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .spec__title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+  }
+
+  .spec__metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ad-space-4);
+  }
+
+  .spec__middle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ad-space-4);
+  }
+
+  .spec__bottom {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+    gap: var(--ad-space-4);
+  }
+
+  .summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .summary p {
+    margin: 0;
+  }
+
+  @media (max-width: 980px) {
+    .hero,
+    .spec__middle,
+    .spec__bottom {
+      grid-template-columns: 1fr;
+    }
+
+    .spec__metrics {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

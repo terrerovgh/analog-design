@@ -1,0 +1,310 @@
+---
+/**
+ * DeviceFrame — bezel/chassis container that frames its slot
+ * as if it were the screen of a physical device.
+ *
+ * Variants:
+ *  - `monitor`  — CRT-style with chunky bezel + base
+ *  - `terminal` — flat amber-style screen with screw marks
+ *  - `server`   — 1U rack unit with vents + LEDs
+ *  - `modem`    — small box with antenna + status LEDs
+ *  - `card`     — bare card with port + vent (default)
+ *
+ * @example
+ *   <DeviceFrame variant="monitor" name="DISPLAY-01" status="ACTIVE">
+ *     <p>Anything goes inside the screen.</p>
+ *   </DeviceFrame>
+ */
+
+type Variant = 'monitor' | 'terminal' | 'server' | 'modem' | 'card';
+
+interface Props {
+  variant?: Variant;
+  name?: string;
+  status?: string;
+  /** Indicator color per LED — true = on, false = off */
+  leds?: boolean[];
+}
+
+const {
+  variant = 'card',
+  name,
+  status,
+  leds = [true, true, false, true],
+} = Astro.props;
+---
+
+<section class:list={['ad-device', `ad-device--${variant}`]}>
+  {/* TOP BAR — name plate / vents */}
+  {variant === 'server' && (
+    <div class="ad-device__rack">
+      <div class="ad-device__vents" aria-hidden="true">
+        {Array.from({ length: 28 }).map(() => <span></span>)}
+      </div>
+      <div class="ad-device__plate">
+        {name && <span class="ad-device__name">{name}</span>}
+        <div class="ad-device__leds">
+          {leds.map((on) => <span class:list={['ad-device__led', on && 'ad-device__led--on']} aria-hidden="true"></span>)}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {(variant === 'monitor' || variant === 'terminal' || variant === 'modem' || variant === 'card') && (name || status) && (
+    <div class="ad-device__plate">
+      {name && <span class="ad-device__name">{name}</span>}
+      {status && <span class="ad-device__status">{status}</span>}
+    </div>
+  )}
+
+  {/* SCREEN / BODY */}
+  {variant !== 'server' && (
+    <div class="ad-device__screen">
+      {variant === 'terminal' && (
+        <>
+          <span class="ad-device__screw ad-device__screw--tl" aria-hidden="true"></span>
+          <span class="ad-device__screw ad-device__screw--tr" aria-hidden="true"></span>
+          <span class="ad-device__screw ad-device__screw--bl" aria-hidden="true"></span>
+          <span class="ad-device__screw ad-device__screw--br" aria-hidden="true"></span>
+        </>
+      )}
+      <div class="ad-device__inner">
+        <slot />
+      </div>
+    </div>
+  )}
+
+  {variant === 'server' && (
+    <div class="ad-device__inner ad-device__inner--server">
+      <slot />
+    </div>
+  )}
+
+  {/* BOTTOM — base / port / antenna */}
+  {variant === 'monitor' && (
+    <div class="ad-device__base" aria-hidden="true">
+      <span class="ad-device__neck"></span>
+      <span class="ad-device__foot"></span>
+    </div>
+  )}
+
+  {variant === 'modem' && (
+    <div class="ad-device__antenna" aria-hidden="true">
+      <span></span><span></span>
+    </div>
+  )}
+
+  {variant === 'card' && (
+    <div class="ad-device__port" aria-hidden="true">
+      {Array.from({ length: 16 }).map(() => <span></span>)}
+    </div>
+  )}
+</section>
+
+<style>
+  .ad-device {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    background: var(--ad-paper);
+    border: var(--ad-border-bold) solid var(--ad-ink);
+    min-width: 280px;
+    max-width: 100%;
+    position: relative;
+  }
+
+  .ad-device__plate {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+    padding: var(--ad-space-2) var(--ad-space-3);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+  }
+
+  .ad-device__name {
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-device__status {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  /* SCREEN ============================================== */
+  .ad-device__screen {
+    position: relative;
+    padding: var(--ad-space-3);
+    background: var(--ad-paper);
+  }
+
+  .ad-device__inner {
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    padding: var(--ad-space-3);
+    min-height: 100px;
+    background: var(--ad-paper);
+    font-size: var(--ad-text-xs);
+    line-height: var(--ad-leading-snug);
+  }
+
+  /* MONITOR (CRT) ====================================== */
+  .ad-device--monitor {
+    border-radius: 4px;
+    padding: 0;
+  }
+  .ad-device--monitor .ad-device__screen {
+    padding: var(--ad-space-4);
+  }
+  .ad-device--monitor .ad-device__inner {
+    border-width: var(--ad-border-thin);
+    border-radius: 2px;
+    min-height: 160px;
+    /* faux scanline texture */
+    background: repeating-linear-gradient(
+      0deg,
+      var(--ad-paper) 0px,
+      var(--ad-paper) 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 3px
+    );
+  }
+  .ad-device__base {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+  }
+  .ad-device__neck {
+    width: 60px;
+    height: 14px;
+    border-left: var(--ad-border-hair) solid var(--ad-ink);
+    border-right: var(--ad-border-hair) solid var(--ad-ink);
+  }
+  .ad-device__foot {
+    width: 140px;
+    height: 8px;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+  }
+
+  /* TERMINAL =========================================== */
+  .ad-device--terminal .ad-device__inner {
+    border-style: dashed;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 12px,
+        rgba(0,0,0,0.03) 12px,
+        rgba(0,0,0,0.03) 13px
+      );
+  }
+  .ad-device__screw {
+    position: absolute;
+    width: 8px; height: 8px;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    border-radius: 50%;
+    background: var(--ad-paper);
+  }
+  .ad-device__screw::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+    transform: rotate(45deg);
+  }
+  .ad-device__screw--tl { top: 4px; left: 4px; }
+  .ad-device__screw--tr { top: 4px; right: 4px; }
+  .ad-device__screw--bl { bottom: 4px; left: 4px; }
+  .ad-device__screw--br { bottom: 4px; right: 4px; }
+
+  /* SERVER (1U RACK) =================================== */
+  .ad-device--server {
+    min-width: 360px;
+  }
+  .ad-device__rack {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+  }
+  .ad-device__vents {
+    display: grid;
+    grid-template-columns: repeat(28, 1fr);
+    gap: 1px;
+    padding: var(--ad-space-2);
+  }
+  .ad-device__vents span {
+    height: 100%;
+    background: var(--ad-graphite-3);
+  }
+  .ad-device--server .ad-device__plate {
+    border-bottom: 0;
+    border-left: var(--ad-border-hair) solid var(--ad-ink);
+    min-width: 140px;
+  }
+  .ad-device__leds {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .ad-device__led {
+    width: 6px; height: 6px;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+  }
+  .ad-device__led--on {
+    background: var(--ad-ink);
+    animation: ad-pulse 1.4s var(--ad-ease-step) infinite;
+  }
+  .ad-device__inner--server {
+    padding: var(--ad-space-3);
+    border: 0;
+    min-height: 80px;
+  }
+
+  /* MODEM ============================================== */
+  .ad-device--modem .ad-device__inner {
+    min-height: 80px;
+  }
+  .ad-device__antenna {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ad-space-2);
+    padding: 0 var(--ad-space-3);
+  }
+  .ad-device__antenna span {
+    width: 2px;
+    height: 24px;
+    background: var(--ad-ink);
+    transform: translateY(-50%);
+  }
+  .ad-device__antenna span:nth-child(2) {
+    height: 36px;
+  }
+
+  /* CARD =============================================== */
+  .ad-device__port {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: 2px;
+    padding: var(--ad-space-1) var(--ad-space-3) var(--ad-space-2);
+    border-top: var(--ad-border-hair) dotted var(--ad-graphite-5);
+  }
+  .ad-device__port span {
+    height: 8px;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+  }
+  .ad-device__port span:nth-child(odd) {
+    background: var(--ad-ink);
+  }
+</style>

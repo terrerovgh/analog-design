@@ -1,0 +1,345 @@
+---
+/**
+ * BusinessChart — bar / line / area chart with stepped entry animation.
+ *
+ * One component, three render modes. Series take a label and an
+ * array of numbers. Animated by default — use `animated={false}`
+ * for static.
+ *
+ * @example
+ *   <BusinessChart
+ *     type="bar"
+ *     title="Q1_REVENUE"
+ *     code="USD_K"
+ *     labels={['JAN','FEB','MAR','APR']}
+ *     series={[{ name:'A', data:[120,180,160,220] }]}
+ *   />
+ *
+ *   <BusinessChart type="line" labels={days} series={[
+ *     { name:'NORTH', data:northData },
+ *     { name:'SOUTH', data:southData },
+ *   ]} />
+ */
+
+type ChartType = 'bar' | 'line' | 'area';
+
+interface Series {
+  name: string;
+  data: number[];
+}
+
+interface Props {
+  type?: ChartType;
+  title?: string;
+  code?: string;
+  labels: string[];
+  series: Series[];
+  width?: number;
+  height?: number;
+  animated?: boolean;
+  yTicks?: number;
+  unit?: string;
+}
+
+const {
+  type = 'bar',
+  title,
+  code,
+  labels,
+  series,
+  width = 480,
+  height = 200,
+  animated = true,
+  yTicks = 4,
+  unit = '',
+} = Astro.props;
+
+// Layout
+const padL = 40;
+const padR = 12;
+const padT = 12;
+const padB = 28;
+const innerW = width - padL - padR;
+const innerH = height - padT - padB;
+
+// Scale
+const allValues = series.flatMap((s) => s.data);
+const min = 0; // baseline at 0 for business charts
+const max = Math.max(...allValues, 1);
+const range = max - min;
+
+// X positions
+const xStep = labels.length > 1 ? innerW / (labels.length - 1) : 0;
+const barGroupW = labels.length > 0 ? innerW / labels.length : 0;
+const barW = (barGroupW * 0.7) / Math.max(series.length, 1);
+const barGap = (barGroupW * 0.3) / 2;
+
+const yPos = (v: number) => padT + innerH - ((v - min) / range) * innerH;
+const xPos = (i: number) => padL + i * xStep;
+
+// Y axis ticks
+const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
+  const v = min + (range / yTicks) * i;
+  return { v, y: padT + innerH - (i / yTicks) * innerH };
+});
+
+// Series patterns — stripe / dot / solid
+const seriesStyles = ['solid', 'striped', 'dotted', 'gridded'] as const;
+
+// Build line/area paths
+const buildLinePath = (data: number[]) =>
+  data.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xPos(i)} ${yPos(v)}`).join(' ');
+
+const buildAreaPath = (data: number[]) => {
+  const line = buildLinePath(data);
+  const lastX = xPos(data.length - 1);
+  const firstX = xPos(0);
+  const baseY = padT + innerH;
+  return `${line} L ${lastX} ${baseY} L ${firstX} ${baseY} Z`;
+};
+---
+
+<figure class:list={['ad-bchart', animated && 'ad-bchart--animated']}>
+  {(title || code) && (
+    <figcaption class="ad-bchart__head">
+      {title && <span class="ad-bchart__title">{title}</span>}
+      <span class="ad-bchart__head-meta">
+        {code && <span class="ad-bchart__code">[{code}]</span>}
+        <span class="ad-bchart__type">{type.toUpperCase()}</span>
+      </span>
+    </figcaption>
+  )}
+
+  <svg
+    class="ad-bchart__svg"
+    width="100%"
+    viewBox={`0 0 ${width} ${height}`}
+    preserveAspectRatio="xMidYMid meet"
+    role="img"
+    aria-label={title ?? `${type} chart`}
+  >
+    {/* SVG defs — fill patterns for series */}
+    <defs>
+      <pattern id="ad-bchart-stripe" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" stroke-width="1" />
+      </pattern>
+      <pattern id="ad-bchart-dot" width="4" height="4" patternUnits="userSpaceOnUse">
+        <circle cx="2" cy="2" r="0.8" fill="currentColor" />
+      </pattern>
+      <pattern id="ad-bchart-grid" width="6" height="6" patternUnits="userSpaceOnUse">
+        <path d="M0 0 H6 M0 0 V6" stroke="currentColor" stroke-width="0.5" fill="none" />
+      </pattern>
+    </defs>
+
+    {/* Y-axis grid + labels */}
+    {yLabels.map((t) => (
+      <>
+        <line x1={padL} y1={t.y} x2={width - padR} y2={t.y}
+          stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="1 3" />
+        <text x={padL - 6} y={t.y + 3}
+          font-family="var(--ad-font-mono)"
+          font-size="9"
+          fill="var(--ad-muted)"
+          text-anchor="end">{Math.round(t.v)}{unit}</text>
+      </>
+    ))}
+
+    {/* X-axis baseline */}
+    <line x1={padL} y1={padT + innerH} x2={width - padR} y2={padT + innerH}
+      stroke="currentColor" stroke-width="1" />
+
+    {/* X labels */}
+    {labels.map((l, i) => (
+      <text
+        x={type === 'bar' ? padL + i * barGroupW + barGroupW / 2 : xPos(i)}
+        y={padT + innerH + 16}
+        font-family="var(--ad-font-mono)"
+        font-size="9"
+        fill="var(--ad-muted)"
+        text-anchor="middle">{l}</text>
+    ))}
+
+    {/* SERIES ============================================== */}
+    {type === 'bar' && series.map((s, sIdx) => {
+      const fillRef = `url(#ad-bchart-${seriesStyles[sIdx % 4] === 'striped' ? 'stripe' : seriesStyles[sIdx % 4] === 'dotted' ? 'dot' : seriesStyles[sIdx % 4] === 'gridded' ? 'grid' : 'stripe'})`;
+      return (
+        <g class="ad-bchart__series" style={`--delay:${sIdx * 80}ms;`}>
+          {s.data.map((v, i) => {
+            const x = padL + i * barGroupW + barGap + sIdx * barW;
+            const y = yPos(v);
+            const h = padT + innerH - y;
+            return (
+              <g class="ad-bchart__bar" style={`--bar-h:${padT + innerH}px;`}>
+                <rect x={x} y={y} width={barW} height={h}
+                  fill={seriesStyles[sIdx % 4] === 'solid' ? 'currentColor' : fillRef}
+                  stroke="currentColor" stroke-width="1" />
+              </g>
+            );
+          })}
+        </g>
+      );
+    })}
+
+    {type === 'line' && series.map((s, sIdx) => (
+      <g class="ad-bchart__series" style={`--delay:${sIdx * 120}ms;`}>
+        <path d={buildLinePath(s.data)}
+          fill="none"
+          stroke="currentColor"
+          stroke-width={sIdx === 0 ? 1.5 : 1}
+          stroke-dasharray={sIdx === 0 ? undefined : '4 2'}
+          class="ad-bchart__line"
+          style={`--ad-stream-length:${innerW * 2};`} />
+        {s.data.map((v, i) => (
+          <rect
+            x={xPos(i) - 2.5}
+            y={yPos(v) - 2.5}
+            width="5" height="5"
+            fill="var(--ad-paper)"
+            stroke="currentColor"
+            stroke-width="1"
+            class="ad-bchart__dot"
+            style={`--dot-delay:${i * 60}ms;`} />
+        ))}
+      </g>
+    ))}
+
+    {type === 'area' && series.map((s, sIdx) => (
+      <g class="ad-bchart__series" style={`--delay:${sIdx * 120}ms;`}>
+        <path d={buildAreaPath(s.data)}
+          fill={`url(#ad-bchart-${seriesStyles[sIdx % 4] === 'striped' ? 'stripe' : 'dot'})`}
+          stroke="currentColor"
+          stroke-width="1.2" />
+      </g>
+    ))}
+  </svg>
+
+  {/* legend */}
+  {series.length > 0 && (
+    <div class="ad-bchart__legend">
+      {series.map((s, i) => (
+        <span class="ad-bchart__legend-item">
+          <span class:list={['ad-bchart__swatch', `ad-bchart__swatch--${seriesStyles[i % 4]}`]} aria-hidden="true"></span>
+          {s.name}
+        </span>
+      ))}
+    </div>
+  )}
+</figure>
+
+<style>
+  .ad-bchart {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .ad-bchart__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  .ad-bchart__title {
+    font-size: var(--ad-text-sm);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-bchart__head-meta {
+    display: inline-flex;
+    gap: var(--ad-space-2);
+    align-items: baseline;
+  }
+
+  .ad-bchart__code,
+  .ad-bchart__type {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-bchart__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  /* ===== Bar animation — grow up from baseline ===== */
+  .ad-bchart--animated .ad-bchart__bar {
+    transform-origin: center bottom;
+    transform-box: fill-box;
+    animation: ad-grow-y var(--ad-dur-sweep) var(--ad-ease-step6) backwards;
+    animation-delay: var(--delay, 0ms);
+  }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(2) { animation-delay: calc(var(--delay) + 60ms); }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(3) { animation-delay: calc(var(--delay) + 120ms); }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(4) { animation-delay: calc(var(--delay) + 180ms); }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(5) { animation-delay: calc(var(--delay) + 240ms); }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(6) { animation-delay: calc(var(--delay) + 300ms); }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(7) { animation-delay: calc(var(--delay) + 360ms); }
+  .ad-bchart--animated .ad-bchart__bar:nth-child(8) { animation-delay: calc(var(--delay) + 420ms); }
+
+  /* ===== Line animation — stroke reveal + dot pop ===== */
+  .ad-bchart--animated .ad-bchart__line {
+    stroke-dasharray: var(--ad-stream-length, 600);
+    stroke-dashoffset: var(--ad-stream-length, 600);
+    animation: ad-stream calc(var(--ad-dur-orbit) / 2) var(--ad-ease-step24) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+
+  .ad-bchart--animated .ad-bchart__dot {
+    opacity: 0;
+    animation: ad-pop var(--ad-dur-tick) var(--ad-ease-step) forwards;
+    animation-delay: var(--dot-delay, 0ms);
+  }
+
+  @keyframes ad-pop {
+    from { opacity: 0; transform: scale(0); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* ===== Legend ===== */
+  .ad-bchart__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-3);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    padding-top: var(--ad-space-1);
+  }
+
+  .ad-bchart__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--ad-ink);
+  }
+
+  .ad-bchart__swatch {
+    width: 10px;
+    height: 10px;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    display: inline-block;
+  }
+
+  .ad-bchart__swatch--solid   { background: var(--ad-ink); }
+  .ad-bchart__swatch--striped { background:
+    repeating-linear-gradient(45deg,
+      var(--ad-ink) 0 1px, transparent 1px 3px); }
+  .ad-bchart__swatch--dotted  { background:
+    radial-gradient(var(--ad-ink) 0.8px, transparent 1px) 0 0 / 4px 4px; }
+  .ad-bchart__swatch--gridded { background:
+    linear-gradient(to right, var(--ad-ink) 0 0.5px, transparent 0.5px) 0 0 / 3px 100%,
+    linear-gradient(to bottom, var(--ad-ink) 0 0.5px, transparent 0.5px) 0 0 / 100% 3px; }
+</style>

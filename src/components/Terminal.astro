@@ -1,0 +1,143 @@
+---
+/**
+ * Terminal — monospaced output container with prompt + cursor.
+ *
+ * Designed to host LogLine children, ASCII output, or any
+ * code/text that should "feel" like a console window. Inverted
+ * variant uses ink-on-paper or paper-on-ink for emphasis.
+ *
+ * @example
+ *   <Terminal title="UPLINK_TRACE" prompt="> " cursor>
+ *     <LogLine time="18:42:03" level="ok"   message="MODULE B7 ONLINE" />
+ *     <LogLine time="18:42:04" level="info" message="HANDSHAKE OK" />
+ *   </Terminal>
+ *
+ *   <Terminal inverted title="ERROR_DUMP">
+ *     <pre>SEGFAULT @ 0x7B6A — STACK OVERFLOW</pre>
+ *   </Terminal>
+ */
+
+interface Props {
+  title?: string;
+  prompt?: string;
+  cursor?: boolean;
+  inverted?: boolean;
+  /** Visible status pill in header right (e.g. "ONLINE") */
+  status?: string;
+}
+
+const {
+  title,
+  prompt,
+  cursor = false,
+  inverted = false,
+  status,
+} = Astro.props;
+---
+
+<section class:list={['ad-term', inverted && 'ad-term--inverted']}>
+  {(title || status) && (
+    <header class="ad-term__head">
+      <div class="ad-term__lights" aria-hidden="true">
+        <span class="ad-term__light"></span>
+        <span class="ad-term__light"></span>
+        <span class="ad-term__light"></span>
+      </div>
+      {title && <span class="ad-term__title">{title}</span>}
+      {status && <span class="ad-term__status">{status}</span>}
+    </header>
+  )}
+
+  <div class="ad-term__body" role="log">
+    {prompt && <span class="ad-term__prompt" aria-hidden="true">{prompt}</span>}
+    <slot />
+    {cursor && <span class="ad-term__cursor ad-blink" aria-hidden="true">█</span>}
+  </div>
+</section>
+
+<style>
+  .ad-term {
+    display: block;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+  }
+
+  .ad-term--inverted {
+    background: var(--ad-ink);
+    color: var(--ad-paper);
+    border-color: var(--ad-ink);
+  }
+
+  .ad-term__head {
+    display: flex;
+    align-items: center;
+    gap: var(--ad-space-3);
+    padding: var(--ad-space-2) var(--ad-space-3);
+    border-bottom: var(--ad-border-hair) solid currentColor;
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-term__lights {
+    display: inline-flex;
+    gap: 4px;
+  }
+
+  .ad-term__light {
+    width: 8px;
+    height: 8px;
+    border: var(--ad-border-hair) solid currentColor;
+  }
+  /* First light "filled" to imply active */
+  .ad-term__light:first-child {
+    background: currentColor;
+  }
+
+  .ad-term__title {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-term__status {
+    margin-left: auto;
+    color: currentColor;
+    opacity: 0.7;
+  }
+
+  .ad-term__body {
+    padding: var(--ad-space-3);
+    font-size: var(--ad-text-xs);
+    line-height: var(--ad-leading-snug);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ad-term__body :global(pre) {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    white-space: pre-wrap;
+  }
+
+  .ad-term__prompt {
+    color: var(--ad-muted);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-term__cursor {
+    display: inline-block;
+    color: currentColor;
+    margin-top: 4px;
+    width: 0.6em;
+    line-height: 1;
+  }
+
+  /* Inverted: re-tint muted tones */
+  .ad-term--inverted .ad-term__prompt {
+    color: var(--ad-graphite-3);
+  }
+</style>

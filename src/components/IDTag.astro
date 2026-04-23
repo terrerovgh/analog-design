@@ -1,0 +1,68 @@
+---
+/**
+ * IDTag — compact code stamp.
+ *
+ * The bare "ID 7F-C2" / "0x7B6A" / "EGH-9320" tag without
+ * the surrounding StatusBadge frame. Useful inline.
+ *
+ * @example
+ *   <IDTag value="7F-C2" />
+ *   <IDTag value="0x7B6A" prefix="ID" />
+ *   <IDTag value="EGH-9320" prefix="NODE" boxed />
+ */
+
+interface Props {
+  value: string;
+  prefix?: string;
+  boxed?: boolean;
+  muted?: boolean;
+}
+
+const { value, prefix, boxed = false, muted = false } = Astro.props;
+---
+
+<span
+  class:list={[
+    'ad-idtag',
+    boxed && 'ad-idtag--boxed',
+    muted && 'ad-idtag--muted',
+  ]}
+>
+  {prefix && <span class="ad-idtag__prefix">{prefix}</span>}
+  <span class="ad-idtag__value">{value}</span>
+</span>
+
+<style>
+  .ad-idtag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-ink);
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .ad-idtag__prefix {
+    font-weight: var(--ad-weight-bold);
+    color: var(--ad-muted);
+  }
+
+  .ad-idtag__value {
+    font-weight: var(--ad-weight-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-idtag--boxed {
+    padding: 2px 6px;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  .ad-idtag--muted .ad-idtag__value {
+    color: var(--ad-muted);
+    font-weight: var(--ad-weight-regular);
+  }
+</style>

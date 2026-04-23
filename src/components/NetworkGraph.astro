@@ -1,0 +1,293 @@
+---
+/**
+ * NetworkGraph — animated network of nodes and links with packet flow.
+ *
+ * Provide explicit `nodes` (with x,y in 0..100 normalized space) and
+ * `edges` (a→b indices). Packets travel along each active edge using
+ * SMIL `animateMotion`. Nodes carry their own state (active / idle /
+ * down) and an optional label.
+ *
+ * @example
+ *   <NetworkGraph
+ *     nodes={[
+ *       { id:'B43', x:10, y:50, state:'active', kind:'hub' },
+ *       { id:'C09', x:40, y:20, state:'active' },
+ *       { id:'D17', x:40, y:80, state:'active' },
+ *       { id:'E25', x:75, y:35, state:'idle' },
+ *       { id:'F33', x:90, y:70, state:'down' },
+ *     ]}
+ *     edges={[
+ *       { a:0, b:1 }, { a:0, b:2 },
+ *       { a:1, b:3 }, { a:2, b:3 },
+ *       { a:3, b:4 },
+ *     ]}
+ *   />
+ */
+
+type NodeKind = 'node' | 'hub' | 'gateway';
+type NodeState = 'active' | 'idle' | 'down';
+
+interface Node {
+  id: string;
+  x: number; // 0..100
+  y: number; // 0..100
+  state?: NodeState;
+  kind?: NodeKind;
+}
+
+interface Edge {
+  a: number;
+  b: number;
+  /** Override packet direction: 'forward' (a→b), 'reverse' (b→a), 'both' */
+  flow?: 'forward' | 'reverse' | 'both' | 'none';
+}
+
+interface Props {
+  nodes: Node[];
+  edges: Edge[];
+  width?: number;
+  height?: number;
+  title?: string;
+  /** Speed of packet flow in ms (lower = faster) */
+  packetSpeed?: number;
+  paused?: boolean;
+}
+
+const {
+  nodes,
+  edges,
+  width = 480,
+  height = 280,
+  title,
+  packetSpeed = 2400,
+  paused = false,
+} = Astro.props;
+const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID().replace(/-/g, '')
+  : `${width}-${height}-${nodes.length}-${edges.length}`;
+
+// Map normalized 0..100 → svg coordinates with padding
+const pad = 24;
+const px = (n: number) => pad + (n / 100) * (width - pad * 2);
+const py = (n: number) => pad + (n / 100) * (height - pad * 2);
+
+const downCount   = nodes.filter((n) => n.state === 'down').length;
+const activeCount = nodes.filter((n) => n.state === 'active').length;
+---
+
+<figure class:list={['ad-net', paused && 'ad-net--paused']}>
+  {title && (
+    <figcaption class="ad-net__head">
+      <span class="ad-net__title">{title}</span>
+      <span class="ad-net__meta">
+        <span>NODES {activeCount}/{nodes.length}</span>
+        {downCount > 0 && <span class="ad-net__alert">DOWN {downCount}</span>}
+      </span>
+    </figcaption>
+  )}
+
+  <div class="ad-net__screen">
+    <svg
+      width="100%"
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label={title ?? 'network graph'}
+      class="ad-net__svg"
+    >
+      <defs>
+        {edges.map((e, i) => {
+          const a = nodes[e.a];
+          const b = nodes[e.b];
+          if (!a || !b) return null;
+          return (
+            <path id={`ad-net-edge-${instanceId}-${i}`} d={`M ${px(a.x)} ${py(a.y)} L ${px(b.x)} ${py(b.y)}`} fill="none" />
+          );
+        })}
+      </defs>
+
+      {/* hairline grid (decorative) */}
+      {Array.from({ length: 6 }).map((_, i) => (
+        <line x1={(width / 6) * i} y1={0} x2={(width / 6) * i} y2={height}
+          stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="1 4" />
+      ))}
+      {Array.from({ length: 4 }).map((_, i) => (
+        <line x1={0} y1={(height / 4) * i} x2={width} y2={(height / 4) * i}
+          stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="1 4" />
+      ))}
+
+      {/* edges */}
+      {edges.map((e) => {
+        const a = nodes[e.a];
+        const b = nodes[e.b];
+        if (!a || !b) return null;
+        const isDown = a.state === 'down' || b.state === 'down';
+        return (
+          <line
+            x1={px(a.x)} y1={py(a.y)}
+            x2={px(b.x)} y2={py(b.y)}
+            stroke="currentColor"
+            stroke-width="1"
+            stroke-dasharray={isDown ? '3 3' : undefined}
+            opacity={isDown ? 0.4 : 0.85}
+          />
+        );
+      })}
+
+      {/* nodes */}
+      {nodes.map((n) => {
+        const x = px(n.x);
+        const y = py(n.y);
+        const r = n.kind === 'hub' ? 9 : n.kind === 'gateway' ? 7 : 5;
+        return (
+          <g class:list={['ad-net__node', `ad-net__node--${n.state ?? 'active'}`]}>
+            {n.kind === 'hub' && (
+              <circle cx={x} cy={y} r={r + 4} fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 2" />
+            )}
+            <circle
+              cx={x} cy={y} r={r}
+              fill={n.state === 'down' ? 'var(--ad-paper)' : 'currentColor'}
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            {n.state === 'active' && n.kind === 'hub' && (
+              <circle cx={x} cy={y} r={r + 8} fill="none" stroke="currentColor" stroke-width="0.5" class="ad-net__ping" />
+            )}
+            <text
+              x={x} y={y + r + 14}
+              font-family="var(--ad-font-mono)"
+              font-size="9"
+              fill="currentColor"
+              text-anchor="middle"
+              letter-spacing="0.08em">{n.id}</text>
+          </g>
+        );
+      })}
+
+      {/* packets — one per active edge */}
+      {edges.map((e, i) => {
+        const a = nodes[e.a];
+        const b = nodes[e.b];
+        if (!a || !b) return null;
+        if (a.state === 'down' || b.state === 'down') return null;
+        if (e.flow === 'none') return null;
+
+        const flow = e.flow ?? 'forward';
+        const sparks = [];
+
+        if (flow === 'forward' || flow === 'both') {
+          sparks.push(
+            <rect width="4" height="4" x="-2" y="-2" fill="currentColor" class="ad-net__packet">
+              <animateMotion
+                dur={`${packetSpeed + i * 80}ms`}
+                begin={`${i * 200}ms`}
+                repeatCount="indefinite"
+                calcMode="discrete"
+                keyTimes="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1"
+                keyPoints="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1">
+                <mpath href={`#ad-net-edge-${instanceId}-${i}`} />
+              </animateMotion>
+            </rect>
+          );
+        }
+        if (flow === 'reverse' || flow === 'both') {
+          sparks.push(
+            <rect width="4" height="4" x="-2" y="-2" fill="currentColor" opacity="0.6" class="ad-net__packet">
+              <animateMotion
+                dur={`${packetSpeed + i * 80}ms`}
+                begin={`${i * 200 + packetSpeed / 2}ms`}
+                repeatCount="indefinite"
+                calcMode="discrete"
+                keyTimes="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1"
+                keyPoints="1;0.9;0.8;0.7;0.6;0.5;0.4;0.3;0.2;0.1;0">
+                <mpath href={`#ad-net-edge-${instanceId}-${i}`} />
+              </animateMotion>
+            </rect>
+          );
+        }
+        return sparks;
+      })}
+    </svg>
+  </div>
+</figure>
+
+<style>
+  .ad-net {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+  }
+
+  .ad-net__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  .ad-net__title {
+    font-size: var(--ad-text-sm);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-net__meta {
+    display: inline-flex;
+    gap: var(--ad-space-3);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-net__alert {
+    color: var(--ad-signal);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-net__screen {
+    position: relative;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    overflow: hidden;
+    background: var(--ad-paper);
+  }
+
+  .ad-net__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  .ad-net__node--down {
+    color: var(--ad-graphite-5);
+  }
+
+  .ad-net__ping {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: ad-ping 1800ms var(--ad-ease-step6) infinite;
+  }
+
+  @keyframes ad-ping {
+    from { opacity: 1; transform: scale(0.4); }
+    to   { opacity: 0; transform: scale(1.4); }
+  }
+
+  .ad-net--paused .ad-net__packet { display: none; }
+  .ad-net--paused .ad-net__ping   { animation-play-state: paused; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ad-net__packet {
+      display: none;
+    }
+
+    .ad-net__ping {
+      animation: none;
+    }
+  }
+</style>

@@ -1,0 +1,228 @@
+---
+/**
+ * CircuitTrace — decorative animated circuit board pattern.
+ *
+ * Generates a deterministic procedural network of orthogonal
+ * traces from `seed`, then animates "sparks" travelling along
+ * each trace using SVG `animateMotion` (SMIL).
+ *
+ * Use as a panel background, an empty-state hero, or any
+ * decorative surface. Slot is rendered above the circuit.
+ *
+ * @example
+ *   <CircuitTrace />
+ *   <CircuitTrace width={480} height={200} traces={16} sparks={8} seed={42} />
+ *   <CircuitTrace inverted>
+ *     <h3>SYSTEM_OFFLINE</h3>
+ *   </CircuitTrace>
+ */
+
+interface Props {
+  width?: number;
+  height?: number;
+  /** How many trace paths to draw */
+  traces?: number;
+  /** How many travelling sparks */
+  sparks?: number;
+  /** Deterministic randomness seed */
+  seed?: number;
+  inverted?: boolean;
+  paused?: boolean;
+}
+
+const {
+  width = 360,
+  height = 180,
+  traces = 12,
+  sparks = 6,
+  seed = 7,
+  inverted = false,
+  paused = false,
+} = Astro.props;
+const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID().replace(/-/g, '')
+  : `${seed}-${width}-${height}-${traces}-${sparks}`;
+
+// Tiny seeded PRNG (mulberry32)
+function rng(s: number) {
+  return () => {
+    s |= 0; s = s + 0x6D2B79F5 | 0;
+    let t = s;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = rng(seed);
+
+// Snap to grid
+const grid = 12;
+const snap = (v: number) => Math.round(v / grid) * grid;
+
+// Build N orthogonal paths from a random edge to another
+type Path = { d: string; len: number };
+const paths: Path[] = [];
+
+const edges = [
+  () => ({ x: 0,                                     y: snap(rand() * height) }), // left
+  () => ({ x: width,                                 y: snap(rand() * height) }), // right
+  () => ({ x: snap(rand() * width),                  y: 0 }),                      // top
+  () => ({ x: snap(rand() * width),                  y: height }),                 // bottom
+];
+
+for (let i = 0; i < traces; i++) {
+  const a = edges[Math.floor(rand() * 4)]();
+  const b = edges[Math.floor(rand() * 4)]();
+  // Build an L-shape with one or two intermediate corners
+  const corners = 1 + Math.floor(rand() * 2);
+  let cx = a.x, cy = a.y;
+  let d = `M ${cx} ${cy}`;
+  let len = 0;
+
+  for (let k = 0; k < corners; k++) {
+    const horizontalFirst = rand() > 0.5;
+    const midX = snap(a.x + (b.x - a.x) * ((k + 1) / (corners + 1)));
+    const midY = snap(a.y + (b.y - a.y) * ((k + 1) / (corners + 1)));
+
+    if (horizontalFirst) {
+      d += ` L ${midX} ${cy}`; len += Math.abs(midX - cx);
+      d += ` L ${midX} ${midY}`; len += Math.abs(midY - cy);
+      cx = midX; cy = midY;
+    } else {
+      d += ` L ${cx} ${midY}`; len += Math.abs(midY - cy);
+      d += ` L ${midX} ${midY}`; len += Math.abs(midX - cx);
+      cx = midX; cy = midY;
+    }
+  }
+  // Final
+  d += ` L ${b.x} ${cy}`; len += Math.abs(b.x - cx);
+  d += ` L ${b.x} ${b.y}`; len += Math.abs(b.y - cy);
+
+  paths.push({ d, len });
+}
+
+// Pads (small squares) at random grid intersections
+const padCount = Math.floor(traces * 0.6);
+const pads: { x: number; y: number; size: number; filled: boolean }[] = [];
+for (let i = 0; i < padCount; i++) {
+  pads.push({
+    x: snap(rand() * (width - grid)) + grid / 2,
+    y: snap(rand() * (height - grid)) + grid / 2,
+    size: rand() > 0.7 ? 6 : 4,
+    filled: rand() > 0.6,
+  });
+}
+
+// Spark assignments — each spark picks a path
+const sparkList = Array.from({ length: sparks }).map((_, i) => ({
+  pathIdx: Math.floor(rand() * paths.length),
+  delay: i * 280,
+  duration: 1800 + Math.floor(rand() * 1600),
+}));
+---
+
+<figure class:list={['ad-circuit', inverted && 'ad-circuit--inverted', paused && 'ad-circuit--paused']}>
+  <svg
+    width="100%"
+    viewBox={`0 0 ${width} ${height}`}
+    preserveAspectRatio="xMidYMid slice"
+    aria-hidden="true"
+    class="ad-circuit__svg"
+  >
+    <defs>
+      {paths.map((p, i) => (
+        <path id={`ad-circuit-p-${instanceId}-${i}`} d={p.d} fill="none" />
+      ))}
+    </defs>
+
+    {/* the traces themselves */}
+    {paths.map((p) => (
+      <path d={p.d} fill="none" stroke="currentColor" stroke-width="0.75" stroke-linecap="square" stroke-linejoin="miter" opacity="0.55" />
+    ))}
+
+    {/* solder pads */}
+    {pads.map((pad) => (
+      <rect
+        x={pad.x - pad.size / 2}
+        y={pad.y - pad.size / 2}
+        width={pad.size}
+        height={pad.size}
+        fill={pad.filled ? 'currentColor' : 'var(--ad-paper)'}
+        stroke="currentColor"
+        stroke-width="0.75"
+      />
+    ))}
+
+    {/* travelling sparks */}
+    {sparkList.map((sp) => (
+      <circle r="2.2" fill="currentColor" class="ad-circuit__spark">
+        <animateMotion
+          dur={`${sp.duration}ms`}
+          begin={`${sp.delay}ms`}
+          repeatCount="indefinite"
+          calcMode="discrete"
+          keyTimes="0;0.083;0.166;0.25;0.333;0.416;0.5;0.583;0.666;0.75;0.833;0.916;1"
+          keyPoints="0;0.083;0.166;0.25;0.333;0.416;0.5;0.583;0.666;0.75;0.833;0.916;1"
+          rotate="auto">
+          <mpath href={`#ad-circuit-p-${instanceId}-${sp.pathIdx}`} />
+        </animateMotion>
+      </circle>
+    ))}
+  </svg>
+
+  <div class="ad-circuit__overlay">
+    <slot />
+  </div>
+</figure>
+
+<style>
+  .ad-circuit {
+    position: relative;
+    display: block;
+    margin: 0;
+    color: var(--ad-ink);
+    background: var(--ad-paper);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    overflow: hidden;
+    min-height: 120px;
+  }
+
+  .ad-circuit--inverted {
+    background: var(--ad-ink);
+    color: var(--ad-paper);
+  }
+
+  .ad-circuit__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ad-circuit__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ad-space-4);
+    pointer-events: none;
+  }
+
+  .ad-circuit__overlay > :global(*) {
+    pointer-events: auto;
+  }
+
+  .ad-circuit--paused animateMotion {
+    /* SMIL pause is non-trivial; we hide sparks instead */
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ad-circuit__spark {
+      display: none;
+    }
+  }
+
+  .ad-circuit--paused .ad-circuit__spark {
+    display: none;
+  }
+</style>

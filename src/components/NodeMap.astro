@@ -1,0 +1,116 @@
+---
+/**
+ * NodeMap — horizontal map of connected nodes.
+ *
+ * The "●━━━━●━━━━○━━━━●" graphic from the source plate. Each
+ * node has a state (active / idle / offline) and an optional
+ * label. Renders inline; flows responsively if needed.
+ *
+ * @example
+ *   <NodeMap nodes={[
+ *     { label: 'B43', state: 'active' },
+ *     { label: 'C09', state: 'active' },
+ *     { label: 'D17', state: 'idle'   },
+ *     { label: 'E25', state: 'offline'},
+ *   ]} />
+ */
+
+type NodeState = 'active' | 'idle' | 'offline';
+
+interface Node {
+  label?: string;
+  state?: NodeState;
+}
+
+interface Props {
+  nodes: Node[];
+  /** Show node label below */
+  labeled?: boolean;
+  size?: number;
+}
+
+const { nodes, labeled = true, size = 12 } = Astro.props;
+---
+
+<div class="ad-nodemap" role="group" aria-label="node map">
+  {nodes.map((node, i) => (
+    <>
+      <div class:list={['ad-nodemap__node', `ad-nodemap__node--${node.state ?? 'active'}`]}>
+        <span
+          class="ad-nodemap__dot"
+          style={`--node-size:${size}px;`}
+          aria-label={`node ${node.label ?? i + 1} ${node.state ?? 'active'}`}
+        ></span>
+        {labeled && node.label && <span class="ad-nodemap__label">{node.label}</span>}
+      </div>
+      {i < nodes.length - 1 && (
+        <span class:list={['ad-nodemap__link', `ad-nodemap__link--${nodes[i].state ?? 'active'}`]} aria-hidden="true"></span>
+      )}
+    </>
+  ))}
+</div>
+
+<style>
+  .ad-nodemap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+  }
+
+  .ad-nodemap__node {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .ad-nodemap__dot {
+    width: var(--node-size, 12px);
+    height: var(--node-size, 12px);
+    border-radius: 50%;
+    border: var(--ad-border-thin) solid var(--ad-ink);
+    background: var(--ad-ink);
+    display: inline-block;
+  }
+
+  .ad-nodemap__node--idle .ad-nodemap__dot {
+    background: var(--ad-paper);
+  }
+
+  .ad-nodemap__node--offline .ad-nodemap__dot {
+    background: var(--ad-paper);
+    border-color: var(--ad-graphite-5);
+    border-style: dashed;
+  }
+
+  .ad-nodemap__label {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-nodemap__link {
+    flex: 1;
+    min-width: 32px;
+    height: 0;
+    border-top: var(--ad-border-bold) solid var(--ad-ink);
+    margin: 0 -1px;
+    align-self: flex-start;
+    margin-top: 5px;
+  }
+
+  .ad-nodemap__link--offline {
+    border-top-style: dashed;
+    border-top-color: var(--ad-graphite-5);
+    border-top-width: var(--ad-border-hair);
+  }
+
+  .ad-nodemap__link--idle {
+    border-top-color: var(--ad-graphite-5);
+    border-top-width: var(--ad-border-hair);
+  }
+</style>

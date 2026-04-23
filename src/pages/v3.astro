@@ -1,0 +1,614 @@
+---
+import Catalog         from '../layouts/Catalog.astro';
+import KeycapButton    from '../components/KeycapButton.astro';
+import RotaryKnob      from '../components/RotaryKnob.astro';
+import Sparkline       from '../components/Sparkline.astro';
+import AsciiDivider    from '../components/AsciiDivider.astro';
+import DeviceFrame     from '../components/DeviceFrame.astro';
+import Oscilloscope    from '../components/Oscilloscope.astro';
+import BusinessChart   from '../components/BusinessChart.astro';
+import ProcessFlow     from '../components/ProcessFlow.astro';
+import CircuitTrace    from '../components/CircuitTrace.astro';
+import NetworkGraph    from '../components/NetworkGraph.astro';
+
+// Re-used foundation pieces
+import StatusBadge     from '../components/StatusBadge.astro';
+import LogLine         from '../components/LogLine.astro';
+import ChannelLabel    from '../components/ChannelLabel.astro';
+import Panel           from '../components/Panel.astro';
+import KanaLabel       from '../components/KanaLabel.astro';
+
+// Sample data
+const sparkA = [12, 18, 9, 22, 30, 28, 40, 35, 48, 42, 55, 60, 48, 52, 70];
+const sparkB = [80, 72, 68, 60, 55, 50, 42, 48, 38, 30, 32, 28, 18, 12, 8];
+const sparkC = [40, 42, 41, 43, 44, 42, 45, 47, 48, 49, 51, 50, 53, 55, 58];
+
+const months  = ['JAN','FEB','MAR','APR','MAY','JUN'];
+const revenue = [{ name:'NORTH', data:[120,180,160,220,260,310] },
+                 { name:'SOUTH', data:[ 90,140,170,150,210,250] }];
+
+const lineDays = ['D-06','D-05','D-04','D-03','D-02','D-01','TODAY'];
+const lineRev  = [{ name:'BAND_A', data:[42,48,55,52,68,72,90] },
+                  { name:'BAND_B', data:[30,35,38,42,48,52,58] }];
+
+const flowSteps = [
+  { label: 'INGEST',    code: 'I-01', state: 'done'    as const },
+  { label: 'PARSE',     code: 'I-02', state: 'done'    as const },
+  { label: 'NORMALIZE', code: 'I-03', state: 'active'  as const },
+  { label: 'INDEX',     code: 'I-04', state: 'pending' as const },
+  { label: 'EMIT',      code: 'I-05', state: 'pending' as const },
+];
+
+const flowStepsErr = [
+  { label: 'AUTH',    code: 'A-01', state: 'done'    as const },
+  { label: 'PAYLOAD', code: 'A-02', state: 'done'    as const },
+  { label: 'VERIFY',  code: 'A-03', state: 'error'   as const },
+  { label: 'COMMIT',  code: 'A-04', state: 'skipped' as const },
+];
+
+const networkNodes = [
+  { id:'B43', x:10, y:50, state:'active' as const, kind:'gateway' as const },
+  { id:'C09', x:35, y:18, state:'active' as const },
+  { id:'C17', x:35, y:50, state:'active' as const, kind:'hub' as const },
+  { id:'C25', x:35, y:82, state:'active' as const },
+  { id:'D33', x:65, y:25, state:'active' as const },
+  { id:'D41', x:65, y:55, state:'idle'   as const },
+  { id:'D49', x:65, y:85, state:'down'   as const },
+  { id:'E57', x:90, y:40, state:'active' as const, kind:'gateway' as const },
+  { id:'E65', x:90, y:70, state:'active' as const },
+];
+const networkEdges = [
+  { a:0, b:1 }, { a:0, b:2 }, { a:0, b:3 },
+  { a:1, b:4 }, { a:2, b:4 }, { a:2, b:5 }, { a:3, b:5 }, { a:3, b:6 },
+  { a:4, b:7 }, { a:5, b:7, flow:'both' as const }, { a:6, b:8 },
+  { a:7, b:8, flow:'both' as const },
+];
+type NetworkNode = {
+  id: string;
+  x: number;
+  y: number;
+  state?: 'active' | 'idle' | 'down';
+  kind?: 'node' | 'hub' | 'gateway';
+};
+
+const wideNetwork = [
+  { id:'CORE', x:50, y:50, state:'active' as const, kind:'hub' as const },
+  ...Array.from({ length: 8 }).map((_, i) => {
+    const a = (i / 8) * Math.PI * 2;
+    return {
+      id: `N-${String(i + 1).padStart(2, '0')}`,
+      x: 50 + Math.cos(a) * 40,
+      y: 50 + Math.sin(a) * 40,
+      state: i === 5 ? 'down' : i === 2 ? 'idle' : 'active',
+    } as const;
+  }),
+];
+const wideEdges = Array.from({ length: 8 }).map((_, i) => ({ a: 0, b: i + 1 }));
+const wideNetworkNodes: NetworkNode[] = wideNetwork;
+---
+
+<Catalog title="ANALOG_DESIGN — V0.3 EXPANSION" channel="EXPANSION_INDEX">
+
+  <!-- HERO ===================================================== -->
+  <section class="hero">
+    <div class="hero__col">
+      <span class="hero__eyebrow">// DESIGN_SYSTEM — V0.3 — PHASE_03 / EXPANSION</span>
+      <h1 class="hero__title">
+        EXPANSION<br />PACK
+        <span class="hero__kana">拡張</span>
+      </h1>
+      <p class="hero__lede">
+        10 new components — physical inputs, animated charts, network
+        topologies, and circuit decoration. Every animation is stepped,
+        mechanical, and respects <code>prefers-reduced-motion</code>.
+      </p>
+      <div class="hero__keys">
+        <KeycapButton label="ESC" legend="F-1" />
+        <KeycapButton label="GO"  inverted />
+        <KeycapButton label="REC" signal />
+        <KeycapButton label="ENTER" wide legend="↵" />
+      </div>
+    </div>
+
+    <div class="hero__col hero__col--right">
+      <CircuitTrace width={420} height={220} traces={14} sparks={8} seed={7}>
+        <KanaLabel kana="拡張" latin="EXPANSION" size="lg" />
+      </CircuitTrace>
+    </div>
+  </section>
+
+  <AsciiDivider variant="double" label="V0.3 / 10 NEW COMPONENTS" />
+
+  <!-- ============================================================
+       INPUTS — KEYCAPS + KNOBS
+       ============================================================ -->
+  <h2 class="part">▌ INPUTS — HARDWARE</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">15 — KEYCAP_BUTTON</h3>
+      <span class="section__meta">physical key with offset depth</span>
+    </header>
+
+    <div class="grid grid--inline">
+      <KeycapButton label="GO" />
+      <KeycapButton label="STOP" />
+      <KeycapButton label="ENTER" wide legend="↵" />
+      <KeycapButton label="ESC"   legend="F-1" />
+      <KeycapButton label="ABORT" inverted />
+      <KeycapButton label="REC"   signal />
+      <KeycapButton label="LOCKED" disabled />
+    </div>
+  </section>
+
+  <AsciiDivider variant="dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">16 — ROTARY_KNOB</h3>
+      <span class="section__meta">analog potentiometer dial</span>
+    </header>
+
+    <div class="grid grid--inline grid--gap-lg" style="align-items:flex-start;">
+      <RotaryKnob value={62} label="GAIN" />
+      <RotaryKnob value={28} label="MIX" size={80} />
+      <RotaryKnob value={3}  max={11} unit="" label="VOLUME" />
+      <RotaryKnob value={88} label="DRIVE" critical />
+      <RotaryKnob value={0}  label="ORBIT" live size={80} ticks={9} />
+    </div>
+  </section>
+
+  <AsciiDivider variant="solid" label="STATIC GRAPHICS" />
+
+  <!-- ============================================================
+       STATIC GRAPHICS
+       ============================================================ -->
+  <h2 class="part">▌ STATIC GRAPHICS</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">17 — ASCII_DIVIDER</h3>
+      <span class="section__meta">text-based separators (6 variants)</span>
+    </header>
+
+    <div class="stack">
+      <AsciiDivider variant="solid" />
+      <AsciiDivider variant="dotted" />
+      <AsciiDivider variant="double" label="SECTION_BREAK" />
+      <AsciiDivider variant="block"  label="SCANLINE" />
+      <AsciiDivider variant="scan"   label="LIVE — TRACE" animated />
+      <AsciiDivider variant="ticker" label="MAIN_BUS · NODE EGH-9320 · VER 1.2 · PACKET_LOSS 0.3% · CHECKSUM OK" />
+    </div>
+  </section>
+
+  <AsciiDivider variant="dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">18 — DEVICE_FRAME</h3>
+      <span class="section__meta">device chassis as container</span>
+    </header>
+
+    <div class="grid grid--2">
+      <DeviceFrame variant="monitor" name="DISPLAY-01" status="ACTIVE">
+        <KanaLabel kana="信号" latin="SIGNAL" size="md" />
+        <p style="margin: 8px 0 0; color:var(--ad-muted); font-size:11px;">
+          CRT-style with phosphor scanlines and chunky bezel.
+        </p>
+      </DeviceFrame>
+
+      <DeviceFrame variant="terminal" name="TTY-04" status="LISTENING">
+        <LogLine time="18:42:03" level="ok"   message="MODULE B7 ONLINE" />
+        <LogLine time="18:42:04" level="info" message="HANDSHAKE OK" />
+        <LogLine time="18:42:11" level="warn" message="LATENCY 142MS" />
+      </DeviceFrame>
+
+      <DeviceFrame variant="server" name="RACK-09" status="ONLINE" leds={[true,true,false,true,true,false,true,true]}>
+        <span style="font-size:11px; color:var(--ad-muted); letter-spacing:0.08em; text-transform:uppercase;">
+          1U COMPUTE · 8 CORE · 64GB · 4TB SSD
+        </span>
+      </DeviceFrame>
+
+      <DeviceFrame variant="modem" name="UPLINK-01" status="LIVE">
+        <ChannelLabel name="CARRIER_A" state="live" />
+        <p style="margin: 4px 0 0; color:var(--ad-muted); font-size:11px;">
+          Antenna mast + status LEDs above.
+        </p>
+      </DeviceFrame>
+
+      <DeviceFrame variant="card" name="EXPANSION_C" status="MOUNTED">
+        <span style="font-size:11px; color:var(--ad-muted); letter-spacing:0.08em; text-transform:uppercase;">
+          PCIe x4 · revision B · ID 0x7B6A
+        </span>
+      </DeviceFrame>
+    </div>
+  </section>
+
+  <AsciiDivider variant="solid" label="ANIMATED CHARTS" />
+
+  <!-- ============================================================
+       ANIMATED CHARTS
+       ============================================================ -->
+  <h2 class="part">▌ ANIMATED CHARTS</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">19 — SPARKLINE</h3>
+      <span class="section__meta">inline trend with reveal animation</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Sparkline data={sparkA} label="REVENUE_A" value="+72.4" delta="+18.2%" animated showMarker area />
+      <Sparkline data={sparkB} label="LATENCY"   value="8MS"   delta="-62.1%" animated showMarker />
+      <Sparkline data={sparkC} label="UPTIME"    value="99.91%" delta="+0.04%" variant="step" animated />
+      <Sparkline data={sparkA} label="THROUGHPUT" value="940MBPS" delta="+4.0%" width={200} height={48} animated showMarker area />
+    </div>
+  </section>
+
+  <AsciiDivider variant="dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">20 — OSCILLOSCOPE</h3>
+      <span class="section__meta">animated waveform display</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Oscilloscope wave="sine"     label="CH-01" frequency={2} amplitude={0.7} />
+      <Oscilloscope wave="square"   label="CH-02" frequency={3} amplitude={0.6} />
+      <Oscilloscope wave="sawtooth" label="CH-03" frequency={2} amplitude={0.7} />
+      <Oscilloscope wave="triangle" label="CH-04" frequency={4} amplitude={0.5} />
+      <Oscilloscope wave="noise"    label="CH-05 — NOISE" frequency={6} amplitude={0.6} critical />
+      <Oscilloscope wave="sine"     label="CH-06 — PAUSED" frequency={2} amplitude={0.7} paused />
+    </div>
+  </section>
+
+  <AsciiDivider variant="dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">21 — BUSINESS_CHART</h3>
+      <span class="section__meta">bar / line / area with stepped reveal</span>
+    </header>
+
+    <div class="stack stack--lg">
+      <Panel channel="QUARTERLY_REVENUE" id="Q1-2026" footer="USD_K — SOURCE: LEDGER_42">
+        <BusinessChart
+          type="bar"
+          title="REVENUE_BY_REGION"
+          code="USD_K"
+          labels={months}
+          series={revenue}
+          height={220}
+        />
+      </Panel>
+
+      <Panel channel="WEEKLY_THROUGHPUT" id="W-16" footer="MBPS — SAMPLED HOURLY">
+        <BusinessChart
+          type="line"
+          title="BANDWIDTH_TRACE"
+          code="MBPS"
+          labels={lineDays}
+          series={lineRev}
+          height={200}
+        />
+      </Panel>
+    </div>
+  </section>
+
+  <AsciiDivider variant="solid" label="ANIMATED FLOWS / NETWORKS" />
+
+  <!-- ============================================================
+       FLOWS, NETWORKS, CIRCUITS
+       ============================================================ -->
+  <h2 class="part">▌ ANIMATED FLOWS & NETWORKS</h2>
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">22 — PROCESS_FLOW</h3>
+      <span class="section__meta">sequential pipeline with token traversal</span>
+    </header>
+
+    <div class="stack stack--lg">
+      <ProcessFlow title="ETL_PIPELINE" steps={flowSteps} />
+      <ProcessFlow title="AUTH_HANDSHAKE" steps={flowStepsErr} direction="vertical" />
+    </div>
+  </section>
+
+  <AsciiDivider variant="dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">23 — CIRCUIT_TRACE</h3>
+      <span class="section__meta">procedural traces with travelling sparks</span>
+    </header>
+
+    <div class="grid grid--2">
+      <CircuitTrace width={480} height={180} traces={14} sparks={6} seed={7} />
+      <CircuitTrace width={480} height={180} traces={20} sparks={10} seed={42}>
+        <StatusBadge state="error" id="0x7B6A" label="OFFLINE" blink />
+      </CircuitTrace>
+      <CircuitTrace width={480} height={180} traces={18} sparks={8} seed={101} inverted>
+        <KanaLabel kana="再起動" latin="REBOOT" size="lg" />
+      </CircuitTrace>
+      <CircuitTrace width={480} height={180} traces={10} sparks={4} seed={999} paused>
+        <span style="font-family:var(--ad-font-mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ad-muted);">
+          PAUSED — STATIC PREVIEW
+        </span>
+      </CircuitTrace>
+    </div>
+  </section>
+
+  <AsciiDivider variant="dotted" />
+
+  <section class="section">
+    <header class="section__head">
+      <h3 class="section__title">24 — NETWORK_GRAPH</h3>
+      <span class="section__meta">topology with packet flow on edges</span>
+    </header>
+
+    <div class="stack stack--lg">
+      <NetworkGraph
+        title="MESH_TOPOLOGY"
+        nodes={networkNodes}
+        edges={networkEdges}
+        width={640}
+        height={320}
+      />
+
+      <NetworkGraph
+        title="STAR_TOPOLOGY — CORE-1"
+        nodes={wideNetworkNodes}
+        edges={wideEdges}
+        width={520}
+        height={400}
+        packetSpeed={1800}
+      />
+    </div>
+  </section>
+
+  <AsciiDivider variant="double" label="MISSION_CONTROL — COMPOSED EXAMPLE" />
+
+  <!-- ============================================================
+       MISSION CONTROL — Composed example
+       ============================================================ -->
+  <h2 class="part">▌ COMPOSITION — MISSION_CONTROL</h2>
+
+  <section class="section">
+    <Panel channel="MISSION_CONTROL" id="MC-2026" footer="LIVE — ALL SYSTEMS NOMINAL" kana="制御">
+      <div class="mc">
+        <div class="mc__top">
+          <div class="mc__sparks">
+            <Sparkline data={sparkA} label="REV"  value="+72.4" delta="+18.2%" animated showMarker />
+            <Sparkline data={sparkB} label="LAT"  value="8MS"   delta="-62.1%" animated showMarker />
+            <Sparkline data={sparkC} label="UP"   value="99.9%" delta="+0.04%" animated />
+          </div>
+          <div class="mc__keys">
+            <KeycapButton label="ARM"   />
+            <KeycapButton label="GO"    inverted />
+            <KeycapButton label="ABORT" signal />
+          </div>
+        </div>
+
+        <div class="mc__row">
+          <Oscilloscope wave="sine"   label="UPLINK"   width={280} height={120} amplitude={0.7} />
+          <Oscilloscope wave="square" label="CARRIER"  width={280} height={120} frequency={3} />
+          <div class="mc__knobs">
+            <RotaryKnob value={62} label="GAIN" size={72} />
+            <RotaryKnob value={42} label="MIX"  size={72} />
+            <RotaryKnob value={88} label="DRV"  size={72} critical />
+          </div>
+        </div>
+
+        <ProcessFlow title="LAUNCH_SEQUENCE" steps={flowSteps} />
+
+        <NetworkGraph
+          title="GROUND_NETWORK"
+          nodes={networkNodes}
+          edges={networkEdges}
+          width={760}
+          height={260}
+          packetSpeed={2400}
+        />
+      </div>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="ticker" label="END_OF_EXPANSION · 24 / 24 COMPONENTS · 聞き耳" />
+
+  <footer class="end">
+    <span>END_OF_CATALOG</span>
+    <span>—</span>
+    <span>24 / 24 COMPONENTS</span>
+    <span>—</span>
+    <span>拡張</span>
+  </footer>
+
+</Catalog>
+
+<style>
+  /* ===== Hero ============================================== */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ad-space-12);
+    padding: var(--ad-space-8) 0 var(--ad-space-12);
+    align-items: center;
+  }
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; gap: var(--ad-space-8); }
+  }
+  .hero__col--right { display: flex; justify-content: flex-end; }
+
+  .hero__eyebrow {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    display: block;
+    margin-bottom: var(--ad-space-4);
+  }
+  .hero__title {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-3xl);
+    font-weight: var(--ad-weight-bold);
+    line-height: 0.95;
+    letter-spacing: var(--ad-track-tight);
+    margin: 0 0 var(--ad-space-6);
+  }
+  .hero__kana {
+    display: block;
+    font-family: var(--ad-font-jp);
+    font-size: var(--ad-text-md);
+    color: var(--ad-graphite-5);
+    letter-spacing: var(--ad-track-mega);
+    margin-top: var(--ad-space-2);
+  }
+  .hero__lede {
+    max-width: 52ch;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+    margin: 0 0 var(--ad-space-6);
+  }
+  .hero__lede code {
+    font-size: var(--ad-text-xs);
+    background: var(--ad-graphite-1);
+    padding: 1px 4px;
+  }
+  .hero__keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-3);
+  }
+
+  /* ===== Part header ===================================== */
+  .part {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-mega);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    margin: var(--ad-space-10) 0 0;
+    padding: var(--ad-space-2) 0;
+    border-top: var(--ad-border-bold) solid var(--ad-ink);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+  }
+
+  /* ===== Sections ======================================== */
+  .section { padding: var(--ad-space-8) 0; }
+  .section__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ad-space-4);
+    margin-bottom: var(--ad-space-6);
+  }
+  .section__title {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-md);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .section__meta {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  /* ===== Grids ========================================== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--ad-space-4);
+    align-items: start;
+  }
+  .grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: var(--ad-space-6);
+  }
+  .grid--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-3);
+    align-items: center;
+  }
+  .grid--gap-lg { gap: var(--ad-space-8); }
+
+  /* ===== Stack ========================================== */
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-4);
+    align-items: stretch;
+  }
+  .stack--lg { gap: var(--ad-space-8); }
+
+  /* ===== Mission Control ================================ */
+  .mc {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-6);
+  }
+
+  .mc__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--ad-space-6);
+    flex-wrap: wrap;
+  }
+
+  .mc__sparks {
+    display: flex;
+    gap: var(--ad-space-6);
+    flex-wrap: wrap;
+  }
+
+  .mc__keys {
+    display: flex;
+    gap: var(--ad-space-3);
+  }
+
+  .mc__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: var(--ad-space-4);
+    align-items: end;
+  }
+  @media (max-width: 880px) {
+    .mc__row { grid-template-columns: 1fr; }
+  }
+
+  .mc__knobs {
+    display: flex;
+    gap: var(--ad-space-4);
+    align-items: flex-start;
+  }
+
+  /* ===== End ============================================ */
+  .end {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--ad-space-3);
+    padding: var(--ad-space-8) 0;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+  .end :nth-child(5) {
+    font-family: var(--ad-font-jp);
+    text-transform: none;
+  }
+</style>
