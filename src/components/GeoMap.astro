@@ -155,7 +155,7 @@ const arcs = connections
     if (!a || !b) return null;
     return { d: greatCirclePath(a, b), signal: c.signal };
   })
-  .filter((x): x is { d: string; signal?: boolean } => x !== null);
+  .filter((x): x is { d: string; signal: boolean | undefined } => x !== null);
 
 const projectionLabel = projection === 'mercator' ? 'WEB_MERCATOR' : 'PLATE_CARREE';
 const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -192,11 +192,17 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
         <clipPath id={`ad-geomap-clip-${instanceId}`}>
           <rect x="0" y="0" width={width} height={height} />
         </clipPath>
+        <pattern id={`ad-geomap-noise-${instanceId}`} width="18" height="18" patternUnits="userSpaceOnUse">
+          <path d="M18 0H0V18" fill="none" stroke="currentColor" stroke-width="0.35" opacity="0.14" />
+          <circle cx="9" cy="9" r="0.6" fill="currentColor" opacity="0.18" />
+        </pattern>
       </defs>
 
       <g clip-path={`url(#ad-geomap-clip-${instanceId})`}>
         <rect x="0" y="0" width={width} height={height}
-          fill="var(--ad-paper)" stroke="none" />
+          fill="var(--ad-plate)" stroke="none" />
+        <rect x="0" y="0" width={width} height={height}
+          fill={`url(#ad-geomap-noise-${instanceId})`} opacity="0.8" />
 
         {/* zoom-pan target */}
         <g class="ad-geomap__world" data-geomap-world>
@@ -309,6 +315,8 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
         {/* outer frame and stamp — outside the zoom group, stay fixed */}
         <rect x="0" y="0" width={width} height={height}
           fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.5" />
+        <path d={`M 10 10 H 40 M 10 10 V 40 M ${width - 10} 10 H ${width - 40} M ${width - 10} 10 V 40 M 10 ${height - 10} H 40 M 10 ${height - 10} V ${height - 40} M ${width - 10} ${height - 10} H ${width - 40} M ${width - 10} ${height - 10} V ${height - 40}`}
+          fill="none" stroke="currentColor" stroke-width="1" opacity="0.72" vector-effect="non-scaling-stroke" />
         <text x={width - 6} y={height - 6}
           font-family="var(--ad-font-mono)"
           font-size="8"
@@ -434,12 +442,15 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
     color: var(--ad-ink);
     font-family: var(--ad-font-mono);
     width: 100%;
+    min-width: 0;
   }
 
   .ad-geomap__head {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ad-space-2);
     padding-bottom: var(--ad-space-2);
     border-bottom: var(--ad-border-hair) solid var(--ad-ink);
     font-size: var(--ad-text-2xs);
@@ -448,7 +459,13 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
   }
 
   .ad-geomap__title { font-weight: var(--ad-weight-bold); }
-  .ad-geomap__head-meta { display: inline-flex; gap: var(--ad-space-2); align-items: center; }
+  .ad-geomap__head-meta {
+    display: inline-flex;
+    gap: var(--ad-space-2);
+    align-items: center;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
   .ad-geomap__code, .ad-geomap__count { color: var(--ad-muted); }
 
   .ad-geomap__reset {
@@ -471,15 +488,20 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
 
   .ad-geomap__frame {
     position: relative;
+    width: 100%;
+    max-width: 100%;
     border: var(--ad-border-hair) solid var(--ad-ink);
     background:
-      radial-gradient(circle at 15% 20%, var(--ad-surface) 0%, transparent 55%),
+      radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--ad-ink) 10%, transparent) 0%, transparent 42%),
+      linear-gradient(180deg, var(--ad-plate), var(--ad-paper)),
       var(--ad-paper);
     overflow: hidden;
   }
 
   .ad-geomap__svg {
     display: block;
+    width: 100%;
+    max-width: 100%;
     shape-rendering: geometricPrecision;
     cursor: crosshair;
     touch-action: none;
@@ -487,6 +509,7 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
 
   .ad-geomap__country {
     transition: fill var(--ad-dur-blink) var(--ad-ease-step);
+    filter: saturate(0);
   }
 
   .ad-geomap__country:hover {
@@ -508,6 +531,7 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
 
   .ad-geomap__arc {
     animation: ad-dash-flow 2400ms var(--ad-ease-step24) infinite;
+    stroke-linecap: square;
   }
 
   .ad-geomap__arc--signal {
@@ -533,7 +557,7 @@ const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID ===
     gap: var(--ad-space-2);
     align-items: center;
     padding: 2px 6px;
-    background: color-mix(in srgb, var(--ad-paper) 75%, transparent);
+    background: var(--ad-glass);
     border: var(--ad-border-hair) solid var(--ad-grid);
     font-size: 9px;
     color: var(--ad-muted);

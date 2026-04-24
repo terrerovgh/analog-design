@@ -67,7 +67,6 @@ const arcPath = (t0: number, t1: number, radius: number) => {
   return `M ${p0.x} ${p0.y} A ${radius} ${radius} 0 ${large} 0 ${p1.x} ${p1.y}`;
 };
 
-const needle = polar(valueT, r - 8);
 const isWarn = warnFrom !== undefined && v >= warnFrom;
 ---
 
@@ -79,6 +78,13 @@ const isWarn = warnFrom !== undefined && v >= warnFrom;
     role="img"
     aria-label={`${label} ${value}${unit}`}
   >
+    <rect x="1" y="1" width={width - 2} height={height + 34}
+      fill="var(--ad-plate)" stroke="currentColor" stroke-width="0.5" opacity="0.35" />
+    {Array.from({ length: 7 }).map((_, i) => (
+      <line x1={(width / 6) * i} y1="1" x2={(width / 6) * i} y2={height + 35}
+        stroke="var(--ad-grid)" stroke-width="0.4" stroke-dasharray="1 5" opacity="0.6" />
+    ))}
+
     {/* outer arc track */}
     <path d={arcPath(0, 1, r)} fill="none" stroke="currentColor" stroke-width="1" opacity="0.35" />
 
@@ -153,6 +159,8 @@ const isWarn = warnFrom !== undefined && v >= warnFrom;
     <circle cx={cx} cy={cy} r="2" fill="currentColor" />
 
     {/* readout */}
+    <rect x={cx - 38} y={cy + 12} width="76" height="24"
+      fill="var(--ad-paper)" stroke="var(--ad-grid)" stroke-width="0.75" />
     <text x={cx} y={cy + 28}
       font-family="var(--ad-font-mono)"
       font-size="18"
@@ -176,11 +184,14 @@ const isWarn = warnFrom !== undefined && v >= warnFrom;
     margin: 0;
     color: var(--ad-ink);
     font-family: var(--ad-font-mono);
+    width: 100%;
+    max-width: 260px;
   }
 
   .ad-gauge__svg {
     display: block;
     shape-rendering: geometricPrecision;
+    filter: contrast(1.02);
   }
 
   .ad-gauge__cap {

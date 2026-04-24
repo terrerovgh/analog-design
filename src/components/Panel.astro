@@ -56,11 +56,41 @@ const { channel, id, footer, kana } = Astro.props;
     --pad: var(--ad-space-5);
     position: relative;
     display: block;
+    width: 100%;
+    min-width: 0;
     padding: var(--pad);
-    background: var(--ad-paper);
+    border: var(--ad-border-hair) solid color-mix(in srgb, var(--ad-ink) 18%, transparent);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--ad-ink) 5%, transparent) 1px, transparent 1px) 0 0 / 20px 20px,
+      linear-gradient(180deg, color-mix(in srgb, var(--ad-ink) 4%, transparent) 1px, transparent 1px) 0 0 / 20px 20px,
+      linear-gradient(180deg, var(--ad-plate), var(--ad-paper));
     color: var(--ad-ink);
     font-family: var(--ad-font-mono);
     overflow: hidden;
+    isolation: isolate;
+  }
+
+  .ad-panel::before,
+  .ad-panel::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ad-panel::before {
+    inset: 6px;
+    border: var(--ad-border-hair) dotted color-mix(in srgb, var(--ad-ink) 22%, transparent);
+  }
+
+  .ad-panel::after {
+    top: 0;
+    left: -30%;
+    width: 42%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ad-ink) 4%, transparent), transparent);
+    animation: ad-scan calc(var(--ad-dur-scan) * 3.5) var(--ad-ease-step24) infinite;
+    opacity: 0.8;
   }
 
   /* Corner brackets — drawn with two borders, no SVG */
@@ -100,6 +130,8 @@ const { channel, id, footer, kana } = Astro.props;
     min-width: 0;
     position: relative;
     z-index: 1;
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid color-mix(in srgb, var(--ad-ink) 55%, transparent);
   }
 
   .ad-panel__channel {
@@ -108,6 +140,7 @@ const { channel, id, footer, kana } = Astro.props;
     letter-spacing: var(--ad-track-wide);
     text-transform: uppercase;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .ad-panel__kana {
@@ -115,7 +148,7 @@ const { channel, id, footer, kana } = Astro.props;
     right: var(--ad-space-4);
     bottom: var(--ad-space-4);
     font-family: var(--ad-font-jp);
-    font-size: clamp(28px, 6vw, 42px);
+    font-size: 42px;
     line-height: 1;
     color: var(--ad-graphite-3);
     opacity: 0.45;
@@ -136,6 +169,14 @@ const { channel, id, footer, kana } = Astro.props;
     line-height: var(--ad-leading-snug);
     position: relative;
     z-index: 1;
+  }
+
+  .ad-panel__body :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .ad-panel__body :global(p:last-child) {
+    margin-bottom: 0;
   }
 
   .ad-panel__foot {
@@ -160,6 +201,10 @@ const { channel, id, footer, kana } = Astro.props;
   @media (max-width: 560px) {
     .ad-panel__head {
       grid-template-columns: 1fr;
+    }
+
+    .ad-panel__kana {
+      font-size: 28px;
     }
   }
 </style>

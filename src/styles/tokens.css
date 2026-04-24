@@ -28,6 +28,10 @@
   --ad-surface:    color-mix(in srgb, var(--ad-paper) 88%, var(--ad-ink) 12%);
   --ad-surface-2:  color-mix(in srgb, var(--ad-paper) 82%, var(--ad-ink) 18%);
   --ad-elevated:   color-mix(in srgb, var(--ad-paper) 94%, var(--ad-ink) 6%);
+  --ad-glass:      color-mix(in srgb, var(--ad-paper) 76%, transparent);
+  --ad-plate:      color-mix(in srgb, var(--ad-paper) 96%, var(--ad-ink) 4%);
+  --ad-wash:       color-mix(in srgb, var(--ad-paper) 70%, var(--ad-ink) 30%);
+  --ad-shadow-rule: color-mix(in srgb, var(--ad-ink) 18%, transparent);
   --ad-toggle-track: var(--ad-graphite-1);
   --ad-toggle-thumb: var(--ad-ink);
   --ad-toggle-icon:  var(--ad-paper);
@@ -50,7 +54,7 @@
   --ad-text-3xl:   64px;
 
   /* Letter-spacing — wide for labels, tight for numbers */
-  --ad-track-tight: -0.01em;
+  --ad-track-tight: 0em;
   --ad-track-flat:   0em;
   --ad-track-wide:   0.08em;
   --ad-track-mega:   0.18em;
@@ -121,6 +125,10 @@
   --ad-surface:    color-mix(in srgb, var(--ad-paper) 86%, var(--ad-ink) 14%);
   --ad-surface-2:  color-mix(in srgb, var(--ad-paper) 80%, var(--ad-ink) 20%);
   --ad-elevated:   color-mix(in srgb, var(--ad-paper) 92%, var(--ad-ink) 8%);
+  --ad-glass:      color-mix(in srgb, var(--ad-paper) 82%, transparent);
+  --ad-plate:      color-mix(in srgb, var(--ad-paper) 94%, var(--ad-ink) 6%);
+  --ad-wash:       color-mix(in srgb, var(--ad-paper) 72%, var(--ad-ink) 28%);
+  --ad-shadow-rule: color-mix(in srgb, var(--ad-ink) 22%, transparent);
   --ad-toggle-track: color-mix(in srgb, var(--ad-paper) 72%, var(--ad-ink) 28%);
   --ad-toggle-thumb: var(--ad-ink);
   --ad-toggle-icon:  var(--ad-paper);
@@ -155,6 +163,11 @@ html {
 
 body {
   min-height: 100dvh;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--ad-ink) 4%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(180deg, color-mix(in srgb, var(--ad-ink) 3%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--ad-ink) 8%, transparent), transparent 28rem),
+    var(--ad-bg);
   transition:
     background-color var(--ad-dur-sweep) var(--ad-ease-step6),
     color var(--ad-dur-tick) var(--ad-ease-step);
@@ -255,6 +268,18 @@ body {
 @keyframes ad-marker-flash {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0.35; }
+}
+
+@keyframes ad-scan-y {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(100%); }
+}
+
+@keyframes ad-jitter {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(1px, 0); }
+  50%      { transform: translate(0, 1px); }
+  75%      { transform: translate(-1px, 0); }
 }
 
 /* Reduced motion — full override */

@@ -138,7 +138,15 @@ const buildAreaPath = (data: number[]) => {
       <pattern id={gridId} width="6" height="6" patternUnits="userSpaceOnUse">
         <path d="M0 0 H6 M0 0 V6" stroke="currentColor" stroke-width="0.5" fill="none" />
       </pattern>
+      <pattern id={`ad-bchart-micro-${instanceId}`} width="12" height="12" patternUnits="userSpaceOnUse">
+        <path d="M 12 0 L 0 0 0 12" fill="none" stroke="currentColor" stroke-width="0.35" opacity="0.16" />
+      </pattern>
     </defs>
+
+    <rect x="0" y="0" width={width} height={height}
+      fill="var(--ad-plate)" stroke="currentColor" stroke-width="0.5" opacity="0.48" />
+    <rect x={padL} y={padT} width={innerW} height={innerH}
+      fill={`url(#ad-bchart-micro-${instanceId})`} opacity="0.7" />
 
     {/* Y-axis grid + labels */}
     {yLabels.map((t) => (
@@ -254,6 +262,7 @@ const buildAreaPath = (data: number[]) => {
     margin: 0;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
 
   .ad-bchart__head {
@@ -288,7 +297,19 @@ const buildAreaPath = (data: number[]) => {
 
   .ad-bchart__svg {
     display: block;
+    width: 100%;
+    max-width: 100%;
     shape-rendering: geometricPrecision;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+  }
+
+  .ad-bchart__series {
+    transition: opacity var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .ad-bchart__series:hover {
+    opacity: 0.72;
   }
 
   /* ===== Bar animation — grow up from baseline ===== */

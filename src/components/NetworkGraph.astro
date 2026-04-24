@@ -95,6 +95,9 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
       class="ad-net__svg"
     >
       <defs>
+        <pattern id={`ad-net-grid-${instanceId}`} width="16" height="16" patternUnits="userSpaceOnUse">
+          <path d="M16 0H0V16" fill="none" stroke="currentColor" stroke-width="0.35" opacity="0.16" />
+        </pattern>
         {edges.map((e, i) => {
           const a = nodes[e.a];
           const b = nodes[e.b];
@@ -104,6 +107,9 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
           );
         })}
       </defs>
+
+      <rect x="0" y="0" width={width} height={height}
+        fill={`url(#ad-net-grid-${instanceId})`} opacity="0.8" />
 
       {/* hairline grid (decorative) */}
       {Array.from({ length: 6 }).map((_, i) => (
@@ -145,6 +151,10 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
           <g class:list={['ad-net__node', `ad-net__node--${n.state ?? 'active'}`]}>
             {n.kind === 'hub' && (
               <circle cx={x} cy={y} r={r + 4} fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 2" />
+            )}
+            {n.kind === 'gateway' && (
+              <rect x={x - r - 4} y={y - r - 4} width={(r + 4) * 2} height={(r + 4) * 2}
+                fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 2" />
             )}
             <circle
               cx={x} cy={y} r={r}
@@ -222,6 +232,8 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
     margin: 0;
     color: var(--ad-ink);
     font-family: var(--ad-font-mono);
+    min-width: 0;
+    width: 100%;
   }
 
   .ad-net__head {
@@ -261,11 +273,14 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
     overflow: hidden;
     background:
       radial-gradient(circle at top left, var(--ad-surface) 0%, transparent 42%),
+      repeating-linear-gradient(0deg, transparent 0 9px, color-mix(in srgb, var(--ad-ink) 4%, transparent) 9px 10px),
       linear-gradient(180deg, var(--ad-paper) 0%, var(--ad-surface) 100%);
   }
 
   .ad-net__svg {
     display: block;
+    width: 100%;
+    max-width: 100%;
     shape-rendering: geometricPrecision;
   }
 
