@@ -1,0 +1,255 @@
+---
+/**
+ * InputField — labelled monospace text input with optional code,
+ * unit suffix, hint, and error message. Brutalist sharp frame,
+ * blinking caret on focus.
+ *
+ * @example
+ *   <InputField label="CALL_SIGN" id="cs" code="OPS-01" placeholder="EGH-9320" />
+ *   <InputField label="THROUGHPUT" id="tp" unit="MBPS" type="number" hint="Max 1000" />
+ *   <InputField label="EMAIL" id="em" type="email" required error="INVALID FORMAT" />
+ */
+
+interface Props {
+  id: string;
+  label: string;
+  name?: string;
+  type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url';
+  value?: string;
+  placeholder?: string;
+  code?: string;
+  unit?: string;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  readonly?: boolean;
+  autocomplete?: string;
+  inputmode?: 'text' | 'numeric' | 'decimal' | 'email' | 'tel' | 'url' | 'search';
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+const {
+  id,
+  label,
+  name = id,
+  type = 'text',
+  value,
+  placeholder,
+  code,
+  unit,
+  hint,
+  error,
+  required = false,
+  disabled = false,
+  readonly = false,
+  autocomplete,
+  inputmode,
+  min,
+  max,
+  step,
+} = Astro.props;
+
+const hintId = hint ? `${id}-hint` : undefined;
+const errorId = error ? `${id}-error` : undefined;
+const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+---
+
+<div class:list={['ad-input', error && 'ad-input--error', disabled && 'ad-input--disabled']}>
+  <div class="ad-input__head">
+    <label class="ad-input__label" for={id}>
+      <span class="ad-input__label-text">{label}</span>
+      {required && <span class="ad-input__req" aria-hidden="true">*</span>}
+    </label>
+    {code && <span class="ad-input__code">[{code}]</span>}
+  </div>
+
+  <div class="ad-input__field">
+    <span class="ad-input__bracket ad-input__bracket--l" aria-hidden="true">[</span>
+    <input
+      class="ad-input__control"
+      id={id}
+      name={name}
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      required={required}
+      disabled={disabled}
+      readonly={readonly}
+      autocomplete={autocomplete}
+      inputmode={inputmode}
+      min={min}
+      max={max}
+      step={step}
+      aria-invalid={error ? 'true' : undefined}
+      aria-describedby={describedBy}
+    />
+    {unit && <span class="ad-input__unit" aria-hidden="true">{unit}</span>}
+    <span class="ad-input__bracket ad-input__bracket--r" aria-hidden="true">]</span>
+    <span class="ad-input__caret ad-blink" aria-hidden="true"></span>
+  </div>
+
+  {(hint || error) && (
+    <div class="ad-input__foot">
+      {hint && !error && <span class="ad-input__hint" id={hintId}>{hint}</span>}
+      {error && <span class="ad-input__error" id={errorId} role="alert">! {error}</span>}
+    </div>
+  )}
+</div>
+
+<style>
+  .ad-input {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-1);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    width: 100%;
+  }
+
+  .ad-input__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--ad-space-2);
+  }
+
+  .ad-input__label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    cursor: pointer;
+  }
+
+  .ad-input__label-text {
+    font-weight: var(--ad-weight-bold);
+    color: var(--ad-ink);
+  }
+
+  .ad-input__req {
+    color: var(--ad-signal);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-input__code {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-input__field {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border: var(--ad-border-hair) solid var(--ad-rule);
+    background: var(--ad-elevated);
+    transition: border-color var(--ad-dur-tick) var(--ad-ease-step),
+                background-color var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .ad-input__field:focus-within {
+    border-color: var(--ad-ink);
+    border-width: var(--ad-border-bold);
+    background: var(--ad-paper);
+  }
+
+  .ad-input__bracket {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--ad-space-2);
+    color: var(--ad-muted);
+    font-size: var(--ad-text-md);
+    line-height: 1;
+    user-select: none;
+  }
+
+  .ad-input__field:focus-within .ad-input__bracket {
+    color: var(--ad-ink);
+  }
+
+  .ad-input__control {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--ad-space-2) var(--ad-space-1);
+    border: 0;
+    background: transparent;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    letter-spacing: var(--ad-track-flat);
+    line-height: 1.4;
+    outline: none;
+  }
+
+  .ad-input__control::placeholder {
+    color: var(--ad-graphite-5);
+    text-transform: uppercase;
+    letter-spacing: var(--ad-track-wide);
+  }
+
+  .ad-input__control:disabled {
+    color: var(--ad-graphite-5);
+    cursor: not-allowed;
+  }
+
+  .ad-input__unit {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--ad-space-2);
+    border-left: var(--ad-border-hair) dotted var(--ad-grid);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    user-select: none;
+  }
+
+  .ad-input__caret {
+    position: absolute;
+    right: var(--ad-space-3);
+    bottom: 6px;
+    width: 6px;
+    height: 2px;
+    background: var(--ad-ink);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ad-input__field:focus-within .ad-input__caret {
+    opacity: 1;
+  }
+
+  .ad-input__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ad-space-2);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-input__hint {
+    color: var(--ad-muted);
+  }
+
+  .ad-input__error {
+    color: var(--ad-signal);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-input--error .ad-input__field {
+    border-color: var(--ad-signal);
+  }
+
+  .ad-input--disabled .ad-input__field {
+    background: var(--ad-graphite-1);
+    border-style: dashed;
+  }
+</style>

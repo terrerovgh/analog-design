@@ -1,0 +1,233 @@
+---
+/**
+ * Tabs — segmented tab control with stepped active indicator.
+ * Renders a button-based tablist with ARIA. Pair the `id`
+ * attribute on each tab with a panel `<section id="…-panel">`
+ * elsewhere on the page, or use the included default slot for
+ * inline content panels.
+ *
+ * @example
+ *   <Tabs
+ *     id="ops"
+ *     label="OPERATOR_VIEW"
+ *     tabs={[
+ *       { id:'live',  label:'LIVE',   code:'01' },
+ *       { id:'queue', label:'QUEUE',  code:'02' },
+ *       { id:'log',   label:'LOG',    code:'03' },
+ *     ]}
+ *     active="live"
+ *   />
+ */
+
+interface Tab {
+  id: string;
+  label: string;
+  code?: string;
+  disabled?: boolean;
+}
+
+interface Props {
+  id: string;
+  tabs: Tab[];
+  active?: string;
+  label?: string;
+  variant?: 'inline' | 'framed';
+}
+
+const {
+  id,
+  tabs,
+  active = tabs[0]?.id,
+  label = 'Tabs',
+  variant = 'framed',
+} = Astro.props;
+---
+
+<div class:list={['ad-tabs', `ad-tabs--${variant}`]} data-tabs-root data-active={active}>
+  <div class="ad-tabs__list" role="tablist" aria-label={label}>
+    {tabs.map((tab, i) => {
+      const isActive = tab.id === active;
+      return (
+        <button
+          type="button"
+          class:list={['ad-tabs__tab', isActive && 'ad-tabs__tab--active']}
+          role="tab"
+          id={`${id}-tab-${tab.id}`}
+          aria-selected={isActive ? 'true' : 'false'}
+          aria-controls={`${id}-panel-${tab.id}`}
+          tabindex={isActive ? 0 : -1}
+          data-tab-id={tab.id}
+          disabled={tab.disabled}
+        >
+          <span class="ad-tabs__index">{String(i + 1).padStart(2, '0')}</span>
+          <span class="ad-tabs__copy">
+            <span class="ad-tabs__label">{tab.label}</span>
+            {tab.code && <span class="ad-tabs__code">[{tab.code}]</span>}
+          </span>
+          <span class="ad-tabs__marker" aria-hidden="true"></span>
+        </button>
+      );
+    })}
+  </div>
+
+  <div class="ad-tabs__panels">
+    <slot />
+  </div>
+</div>
+
+<script define:vars={{ rootId: id }}>
+  const root = document.querySelector(`[data-tabs-root][data-active]`);
+  document.querySelectorAll('[data-tabs-root]').forEach((el) => {
+    const tabs = Array.from(el.querySelectorAll('[role="tab"]'));
+    const panels = Array.from(el.querySelectorAll('[role="tabpanel"]'));
+
+    const select = (next) => {
+      tabs.forEach((t) => {
+        const isActive = t.dataset.tabId === next;
+        t.setAttribute('aria-selected', String(isActive));
+        t.setAttribute('tabindex', isActive ? '0' : '-1');
+        t.classList.toggle('ad-tabs__tab--active', isActive);
+      });
+      panels.forEach((p) => {
+        const targetId = p.id.replace(/^.*-panel-/, '');
+        p.hidden = targetId !== next;
+      });
+      el.dataset.active = next;
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab.dataset.tabId));
+      tab.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const dir = e.key === 'ArrowRight' ? 1 : -1;
+          let n = (i + dir + tabs.length) % tabs.length;
+          while (tabs[n].disabled && n !== i) n = (n + dir + tabs.length) % tabs.length;
+          tabs[n].focus();
+          select(tabs[n].dataset.tabId);
+        } else if (e.key === 'Home') {
+          tabs[0].focus(); select(tabs[0].dataset.tabId);
+        } else if (e.key === 'End') {
+          const last = tabs[tabs.length - 1];
+          last.focus(); select(last.dataset.tabId);
+        }
+      });
+    });
+
+    select(el.dataset.active);
+  });
+</script>
+
+<style>
+  .ad-tabs {
+    display: flex;
+    flex-direction: column;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    width: 100%;
+  }
+
+  .ad-tabs__list {
+    display: flex;
+    align-items: stretch;
+    border-bottom: var(--ad-border-bold) solid var(--ad-ink);
+  }
+
+  .ad-tabs--framed .ad-tabs__list {
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-elevated);
+  }
+
+  .ad-tabs__tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ad-space-2);
+    padding: var(--ad-space-2) var(--ad-space-3);
+    border: 0;
+    border-right: var(--ad-border-hair) dotted var(--ad-grid);
+    background: transparent;
+    color: var(--ad-muted);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color var(--ad-dur-tick) var(--ad-ease-step),
+                background-color var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .ad-tabs__tab:last-child { border-right: 0; }
+
+  .ad-tabs__tab:hover:not(:disabled) {
+    color: var(--ad-ink);
+    background: var(--ad-surface);
+  }
+
+  .ad-tabs__tab--active {
+    color: var(--ad-ink);
+    background: var(--ad-paper);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-tabs__tab:focus-visible {
+    outline: var(--ad-border-bold) solid var(--ad-ink);
+    outline-offset: -2px;
+  }
+
+  .ad-tabs__tab:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .ad-tabs__index {
+    font-variant-numeric: tabular-nums;
+    color: var(--ad-graphite-5);
+  }
+
+  .ad-tabs__tab--active .ad-tabs__index {
+    color: var(--ad-ink);
+  }
+
+  .ad-tabs__copy {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .ad-tabs__label {
+    font-size: var(--ad-text-xs);
+  }
+
+  .ad-tabs__code {
+    color: var(--ad-graphite-5);
+    font-size: 9px;
+  }
+
+  .ad-tabs__marker {
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 100%;
+    height: 2px;
+    background: var(--ad-ink);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--ad-dur-tick) var(--ad-ease-step6);
+  }
+
+  .ad-tabs__tab--active .ad-tabs__marker {
+    transform: scaleX(1);
+  }
+
+  .ad-tabs__panels {
+    padding: var(--ad-space-4) 0;
+  }
+
+  .ad-tabs--framed .ad-tabs__panels {
+    padding: var(--ad-space-4);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    border-top: 0;
+    background: var(--ad-paper);
+  }
+</style>

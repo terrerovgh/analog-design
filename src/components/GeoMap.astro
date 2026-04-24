@@ -1,0 +1,576 @@
+---
+/**
+ * GeoMap — instrument-grade world map with real country borders.
+ *
+ * Country geometries come from Natural Earth via `world-atlas`
+ * (1:50m resolution, ~177 countries). Geometries are projected at
+ * build time (SSG) and shipped as static SVG paths — no client-side
+ * geo lib needed.
+ *
+ * Interactive: wheel zoom (cursor-centered), pointer drag pan,
+ * reset button. Country labels appear above scale 3×.
+ *
+ * @example
+ *   <GeoMap
+ *     projection="mercator"
+ *     showCountries
+ *     markers={[
+ *       { id:'NYC', lat:40.7,  lon:-74.0, state:'active', pulse:true },
+ *       { id:'TYO', lat:35.7,  lon:139.7, state:'active' },
+ *     ]}
+ *     connections={[{ from:'NYC', to:'TYO', signal:true }]}
+ *   />
+ */
+import { feature } from 'topojson-client';
+import topoData from 'world-atlas/countries-50m.json';
+import {
+  makeProjector,
+  geometryToPath,
+  geometryCenter,
+  type Projection,
+} from './data/projection';
+
+type MarkerState = 'active' | 'idle' | 'down';
+
+interface Marker {
+  id: string;
+  lat: number;
+  lon: number;
+  state?: MarkerState;
+  pulse?: boolean;
+  label?: string;
+}
+
+interface Connection {
+  from: string;
+  to: string;
+  signal?: boolean;
+}
+
+interface Props {
+  title?: string;
+  code?: string;
+  markers?: Marker[];
+  connections?: Connection[];
+  width?: number;
+  height?: number;
+  projection?: Projection;
+  /** Show meridian / parallel grid lines */
+  graticule?: boolean;
+  /** Render country borders + fills (default true) */
+  showCountries?: boolean;
+  /** Show country labels above this zoom scale (default 3) */
+  labelAtZoom?: number;
+  mercatorClip?: number;
+  /** Disable interactive zoom + pan */
+  static?: boolean;
+}
+
+const {
+  title,
+  code,
+  markers = [],
+  connections = [],
+  width = 720,
+  height = 380,
+  projection = 'equirectangular',
+  graticule = true,
+  showCountries = true,
+  labelAtZoom = 3,
+  mercatorClip = 75,
+  static: isStatic = false,
+} = Astro.props;
+
+const project = makeProjector({ width, height, projection, mercatorClip });
+
+// ---- Decode TopoJSON into country features ----
+const countriesObject = (topoData as any).objects.countries;
+const countriesFC = feature(topoData as any, countriesObject) as any;
+const countryFeatures: any[] = countriesFC.features ?? [];
+
+// Pre-render path strings + label centroids at SSG
+const countries = countryFeatures.map((f) => {
+  const d = geometryToPath(f.geometry, project);
+  const center = geometryCenter(f.geometry);
+  const labelPos = center ? project(center[1], center[0]) : null;
+  return {
+    id: f.id ?? f.properties?.name ?? '',
+    name: (f.properties?.name ?? '') as string,
+    d,
+    label: labelPos,
+  };
+});
+
+// ---- Graticule ----
+const meridians = [-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150];
+const parallels = [-60, -45, -30, -15, 0, 15, 30, 45, 60, 75];
+
+// ---- Connections (great-circle) ----
+const greatCirclePath = (a: Marker, b: Marker, segments = 48) => {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+  const lat1 = toRad(a.lat), lon1 = toRad(a.lon);
+  const lat2 = toRad(b.lat), lon2 = toRad(b.lon);
+  const x1 = Math.cos(lat1) * Math.cos(lon1);
+  const y1 = Math.cos(lat1) * Math.sin(lon1);
+  const z1 = Math.sin(lat1);
+  const x2 = Math.cos(lat2) * Math.cos(lon2);
+  const y2 = Math.cos(lat2) * Math.sin(lon2);
+  const z2 = Math.sin(lat2);
+  const clamp = (n: number, mn: number, mx: number) => Math.max(mn, Math.min(mx, n));
+  const dot = clamp(x1 * x2 + y1 * y2 + z1 * z2, -1, 1);
+  const omega = Math.acos(dot);
+  if (omega === 0) {
+    const p = project(a.lat, a.lon);
+    return `M ${p.x} ${p.y}`;
+  }
+  const sinOmega = Math.sin(omega);
+  let path = '';
+  let prevLon = a.lon;
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const k1 = Math.sin((1 - t) * omega) / sinOmega;
+    const k2 = Math.sin(t * omega) / sinOmega;
+    const x = k1 * x1 + k2 * x2;
+    const y = k1 * y1 + k2 * y2;
+    const z = k1 * z1 + k2 * z2;
+    const lat = toDeg(Math.asin(z));
+    const lon = toDeg(Math.atan2(y, x));
+    const p = project(lat, lon);
+    if (i === 0 || Math.abs(lon - prevLon) > 180) {
+      path += ` M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    } else {
+      path += ` L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    }
+    prevLon = lon;
+  }
+  return path.trim();
+};
+
+const markerById = new Map(markers.map((m) => [m.id, m]));
+const arcs = connections
+  .map((c) => {
+    const a = markerById.get(c.from);
+    const b = markerById.get(c.to);
+    if (!a || !b) return null;
+    return { d: greatCirclePath(a, b), signal: c.signal };
+  })
+  .filter((x): x is { d: string; signal?: boolean } => x !== null);
+
+const projectionLabel = projection === 'mercator' ? 'WEB_MERCATOR' : 'PLATE_CARREE';
+const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID().replace(/-/g, '')
+  : `${width}x${height}`;
+---
+
+<figure class:list={['ad-geomap', isStatic && 'ad-geomap--static']} data-geomap={instanceId}>
+  {(title || code) && (
+    <figcaption class="ad-geomap__head">
+      {title && <span class="ad-geomap__title">{title}</span>}
+      <span class="ad-geomap__head-meta">
+        {code && <span class="ad-geomap__code">[{code}]</span>}
+        <span class="ad-geomap__count">{countries.length} COUNTRIES · {markers.length} STATIONS</span>
+        {!isStatic && (
+          <button class="ad-geomap__reset" type="button" data-geomap-reset aria-label="Reset zoom">RESET</button>
+        )}
+      </span>
+    </figcaption>
+  )}
+
+  <div class="ad-geomap__frame">
+    <svg
+      class="ad-geomap__svg"
+      width="100%"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={title ?? 'geographic map'}
+      data-geomap-svg
+      style={`--ad-vbw:${width}; --ad-vbh:${height}; --ad-label-zoom:${labelAtZoom};`}
+    >
+      <defs>
+        <clipPath id={`ad-geomap-clip-${instanceId}`}>
+          <rect x="0" y="0" width={width} height={height} />
+        </clipPath>
+      </defs>
+
+      <g clip-path={`url(#ad-geomap-clip-${instanceId})`}>
+        <rect x="0" y="0" width={width} height={height}
+          fill="var(--ad-paper)" stroke="none" />
+
+        {/* zoom-pan target */}
+        <g class="ad-geomap__world" data-geomap-world>
+          {/* graticule */}
+          {graticule && meridians.map((lon) => {
+            const { x } = project(0, lon);
+            return (
+              <line x1={x} y1={0} x2={x} y2={height}
+                stroke="var(--ad-graphite-3)" stroke-width="0.5"
+                stroke-dasharray="1 4" vector-effect="non-scaling-stroke" />
+            );
+          })}
+          {graticule && parallels.map((lat) => {
+            const { y } = project(lat, 0);
+            const isEquator = lat === 0;
+            return (
+              <line x1={0} y1={y} x2={width} y2={y}
+                stroke={isEquator ? 'currentColor' : 'var(--ad-graphite-3)'}
+                stroke-width={isEquator ? '0.75' : '0.5'}
+                stroke-dasharray={isEquator ? '4 2' : '1 4'}
+                opacity={isEquator ? '0.6' : '1'}
+                vector-effect="non-scaling-stroke" />
+            );
+          })}
+
+          {/* countries */}
+          {showCountries && countries.map((c) => (
+            <path
+              class="ad-geomap__country"
+              d={c.d}
+              data-name={c.name}
+              fill="var(--ad-surface-2)"
+              stroke="currentColor"
+              stroke-width="0.5"
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            >
+              <title>{c.name}</title>
+            </path>
+          ))}
+
+          {/* country labels — hidden until zoomed in */}
+          {showCountries && countries.map((c) => c.label && (
+            <text
+              class="ad-geomap__country-label"
+              x={c.label.x}
+              y={c.label.y}
+              font-family="var(--ad-font-mono)"
+              font-size="6"
+              fill="var(--ad-ink)"
+              text-anchor="middle"
+              letter-spacing="0.06em"
+              opacity="0">{c.name.toUpperCase()}</text>
+          ))}
+
+          {/* connection arcs */}
+          {arcs.map((arc) => (
+            <path
+              class:list={['ad-geomap__arc', arc.signal && 'ad-geomap__arc--signal']}
+              d={arc.d}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-dasharray="4 3"
+              opacity="0.85"
+              vector-effect="non-scaling-stroke" />
+          ))}
+
+          {/* markers */}
+          {markers.map((m) => {
+            const { x, y } = project(m.lat, m.lon);
+            const state = m.state ?? 'active';
+            return (
+              <g class:list={['ad-geomap__marker', `ad-geomap__marker--${state}`]}>
+                {m.pulse && state === 'active' && (
+                  <circle cx={x} cy={y} r="3" fill="none" stroke="currentColor"
+                    stroke-width="0.6" class="ad-geomap__pulse"
+                    vector-effect="non-scaling-stroke" />
+                )}
+                <line x1={x - 6} y1={y} x2={x + 6} y2={y}
+                  stroke="currentColor" stroke-width="0.75" opacity="0.7"
+                  vector-effect="non-scaling-stroke" />
+                <line x1={x} y1={y - 6} x2={x} y2={y + 6}
+                  stroke="currentColor" stroke-width="0.75" opacity="0.7"
+                  vector-effect="non-scaling-stroke" />
+                <rect x={x - 2.5} y={y - 2.5} width="5" height="5"
+                  fill={state === 'down' ? 'var(--ad-paper)' : 'currentColor'}
+                  stroke="currentColor" stroke-width="1"
+                  vector-effect="non-scaling-stroke" />
+                <text class="ad-geomap__marker-label"
+                  x={x + 8} y={y - 6}
+                  font-family="var(--ad-font-mono)"
+                  font-size="9"
+                  font-weight="700"
+                  fill="currentColor"
+                  letter-spacing="0.08em">{m.id}</text>
+                {m.label && (
+                  <text class="ad-geomap__marker-sublabel"
+                    x={x + 8} y={y + 4}
+                    font-family="var(--ad-font-mono)"
+                    font-size="8"
+                    fill="var(--ad-muted)"
+                    letter-spacing="0.08em">{m.label}</text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+
+        {/* outer frame and stamp — outside the zoom group, stay fixed */}
+        <rect x="0" y="0" width={width} height={height}
+          fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.5" />
+        <text x={width - 6} y={height - 6}
+          font-family="var(--ad-font-mono)"
+          font-size="8"
+          fill="var(--ad-muted)"
+          text-anchor="end"
+          letter-spacing="0.18em">{projectionLabel}</text>
+      </g>
+    </svg>
+
+    {!isStatic && (
+      <div class="ad-geomap__hud" aria-hidden="true">
+        <span data-geomap-zoom>1.00×</span>
+        <span class="ad-geomap__hud-sep">·</span>
+        <span>WHEEL TO ZOOM · DRAG TO PAN</span>
+      </div>
+    )}
+  </div>
+
+  <div class="ad-geomap__legend">
+    <span class="ad-geomap__chip ad-geomap__chip--active">ACTIVE</span>
+    <span class="ad-geomap__chip ad-geomap__chip--idle">IDLE</span>
+    <span class="ad-geomap__chip ad-geomap__chip--down">DOWN</span>
+    {arcs.length > 0 && <span class="ad-geomap__chip">{arcs.length} LINKS</span>}
+    <span class="ad-geomap__chip ad-geomap__chip--source">SRC NATURAL_EARTH 1:50M</span>
+  </div>
+</figure>
+
+<script>
+  // Wire zoom + pan for every interactive GeoMap on the page.
+  const maps = document.querySelectorAll<HTMLElement>('[data-geomap]:not(.ad-geomap--static)');
+  for (const root of maps) {
+    const svg = root.querySelector<SVGSVGElement>('[data-geomap-svg]');
+    const world = root.querySelector<SVGGElement>('[data-geomap-world]');
+    const zoomReadout = root.querySelector<HTMLElement>('[data-geomap-zoom]');
+    const resetBtn = root.querySelector<HTMLButtonElement>('[data-geomap-reset]');
+    if (!svg || !world) continue;
+
+    const vbw = Number(svg.style.getPropertyValue('--ad-vbw')) || 720;
+    const vbh = Number(svg.style.getPropertyValue('--ad-vbh')) || 380;
+    const labelZoom = Number(svg.style.getPropertyValue('--ad-label-zoom')) || 3;
+
+    let scale = 1, tx = 0, ty = 0;
+    let dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+
+    const apply = () => {
+      world.setAttribute('transform', `translate(${tx} ${ty}) scale(${scale})`);
+      svg.style.setProperty('--ad-zoom', String(scale));
+      if (zoomReadout) zoomReadout.textContent = `${scale.toFixed(2)}×`;
+      // Toggle country-label visibility above threshold
+      root.dataset.zoomed = scale >= labelZoom ? 'true' : 'false';
+    };
+
+    const screenToView = (clientX: number, clientY: number) => {
+      const rect = svg.getBoundingClientRect();
+      return {
+        x: ((clientX - rect.left) / rect.width) * vbw,
+        y: ((clientY - rect.top) / rect.height) * vbh,
+      };
+    };
+
+    svg.addEventListener('wheel', (e: WheelEvent) => {
+      e.preventDefault();
+      const { x: mx, y: my } = screenToView(e.clientX, e.clientY);
+      const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
+      const next = Math.max(1, Math.min(40, scale * factor));
+      // keep cursor anchored
+      tx = mx - ((mx - tx) * next) / scale;
+      ty = my - ((my - ty) * next) / scale;
+      scale = next;
+      // clamp pan so map can't fly out of frame
+      const maxTx = 0, minTx = vbw - vbw * scale;
+      const maxTy = 0, minTy = vbh - vbh * scale;
+      tx = Math.min(maxTx, Math.max(minTx, tx));
+      ty = Math.min(maxTy, Math.max(minTy, ty));
+      apply();
+    }, { passive: false });
+
+    svg.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (scale <= 1) return;
+      dragging = true;
+      startX = e.clientX; startY = e.clientY; startTx = tx; startTy = ty;
+      svg.setPointerCapture(e.pointerId);
+      svg.style.cursor = 'grabbing';
+    });
+
+    svg.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!dragging) return;
+      const rect = svg.getBoundingClientRect();
+      const dx = ((e.clientX - startX) / rect.width) * vbw;
+      const dy = ((e.clientY - startY) / rect.height) * vbh;
+      tx = startTx + dx;
+      ty = startTy + dy;
+      const maxTx = 0, minTx = vbw - vbw * scale;
+      const maxTy = 0, minTy = vbh - vbh * scale;
+      tx = Math.min(maxTx, Math.max(minTx, tx));
+      ty = Math.min(maxTy, Math.max(minTy, ty));
+      apply();
+    });
+
+    const release = (e: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      svg.releasePointerCapture(e.pointerId);
+      svg.style.cursor = scale > 1 ? 'grab' : 'crosshair';
+    };
+    svg.addEventListener('pointerup', release);
+    svg.addEventListener('pointercancel', release);
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => { scale = 1; tx = 0; ty = 0; apply(); });
+    }
+
+    apply();
+  }
+</script>
+
+<style>
+  .ad-geomap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    margin: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    width: 100%;
+  }
+
+  .ad-geomap__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-geomap__title { font-weight: var(--ad-weight-bold); }
+  .ad-geomap__head-meta { display: inline-flex; gap: var(--ad-space-2); align-items: center; }
+  .ad-geomap__code, .ad-geomap__count { color: var(--ad-muted); }
+
+  .ad-geomap__reset {
+    padding: 2px var(--ad-space-2);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    font-size: 9px;
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .ad-geomap__reset:hover {
+    background: var(--ad-ink);
+    color: var(--ad-paper);
+  }
+
+  .ad-geomap__frame {
+    position: relative;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background:
+      radial-gradient(circle at 15% 20%, var(--ad-surface) 0%, transparent 55%),
+      var(--ad-paper);
+    overflow: hidden;
+  }
+
+  .ad-geomap__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  .ad-geomap__country {
+    transition: fill var(--ad-dur-blink) var(--ad-ease-step);
+  }
+
+  .ad-geomap__country:hover {
+    fill: var(--ad-elevated);
+    stroke-width: 1.2;
+  }
+
+  .ad-geomap__country-label {
+    pointer-events: none;
+    transition: opacity var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .ad-geomap[data-zoomed='true'] .ad-geomap__country-label {
+    opacity: 1;
+  }
+
+  .ad-geomap__marker--down { color: var(--ad-graphite-5); }
+  .ad-geomap__marker--idle { color: var(--ad-graphite-7); }
+
+  .ad-geomap__arc {
+    animation: ad-dash-flow 2400ms var(--ad-ease-step24) infinite;
+  }
+
+  .ad-geomap__arc--signal {
+    color: var(--ad-signal);
+  }
+
+  .ad-geomap__pulse {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: ad-geomap-pulse 1800ms var(--ad-ease-step6) infinite;
+  }
+
+  @keyframes ad-geomap-pulse {
+    from { opacity: 1; transform: scale(0.6); }
+    to   { opacity: 0; transform: scale(3.2); }
+  }
+
+  .ad-geomap__hud {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    display: inline-flex;
+    gap: var(--ad-space-2);
+    align-items: center;
+    padding: 2px 6px;
+    background: color-mix(in srgb, var(--ad-paper) 75%, transparent);
+    border: var(--ad-border-hair) solid var(--ad-grid);
+    font-size: 9px;
+    color: var(--ad-muted);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .ad-geomap__hud-sep { opacity: 0.5; }
+  .ad-geomap__hud span:first-child {
+    color: var(--ad-ink);
+    font-weight: var(--ad-weight-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-geomap__legend {
+    display: flex;
+    gap: var(--ad-space-3);
+    flex-wrap: wrap;
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-geomap__chip {
+    padding: 2px 6px;
+    border: var(--ad-border-hair) solid var(--ad-grid);
+  }
+
+  .ad-geomap__chip--active { background: var(--ad-ink); color: var(--ad-paper); border-color: var(--ad-ink); }
+  .ad-geomap__chip--down   { color: var(--ad-graphite-5); }
+  .ad-geomap__chip--source { margin-left: auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ad-geomap__pulse,
+    .ad-geomap__arc { animation: none; }
+    .ad-geomap__pulse { opacity: 0; }
+  }
+</style>

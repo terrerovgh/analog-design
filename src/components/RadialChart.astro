@@ -1,0 +1,221 @@
+---
+/**
+ * RadialChart — concentric arc series. Each series fills a ring
+ * from 12 o'clock clockwise to its `value/max` proportion.
+ * Stepped reveal animation.
+ *
+ * @example
+ *   <RadialChart
+ *     title="CAPACITY"
+ *     series={[
+ *       { name:'CPU',  value: 72, max: 100 },
+ *       { name:'MEM',  value: 58, max: 100 },
+ *       { name:'NET',  value: 34, max: 100 },
+ *       { name:'DISK', value: 91, max: 100 },
+ *     ]}
+ *   />
+ */
+
+interface RadialSeries {
+  name: string;
+  value: number;
+  max?: number;
+  signal?: boolean;
+}
+
+interface Props {
+  title?: string;
+  code?: string;
+  series: RadialSeries[];
+  size?: number;
+  /** Width of each ring in pixels */
+  ringWidth?: number;
+  /** Gap between rings */
+  ringGap?: number;
+  animated?: boolean;
+}
+
+const {
+  title,
+  code,
+  series,
+  size = 240,
+  ringWidth = 12,
+  ringGap = 4,
+  animated = true,
+} = Astro.props;
+
+const cx = size / 2;
+const cy = size / 2;
+const outerR = size / 2 - 4;
+
+const rings = series.map((s, i) => {
+  const max = s.max ?? 100;
+  const t = Math.max(0, Math.min(1, s.value / max));
+  const radius = outerR - i * (ringWidth + ringGap) - ringWidth / 2;
+  const circ = 2 * Math.PI * radius;
+  return { ...s, t, radius, circ, max };
+});
+---
+
+<figure class="ad-radial">
+  {(title || code) && (
+    <figcaption class="ad-radial__head">
+      {title && <span class="ad-radial__title">{title}</span>}
+      {code && <span class="ad-radial__code">[{code}]</span>}
+    </figcaption>
+  )}
+
+  <div class="ad-radial__body">
+    <svg
+      class="ad-radial__svg"
+      width={size} height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={title ?? 'radial chart'}
+    >
+      {/* center cross */}
+      <line x1={cx - 6} y1={cy} x2={cx + 6} y2={cy} stroke="currentColor" stroke-width="0.5" />
+      <line x1={cx} y1={cy - 6} x2={cx} y2={cy + 6} stroke="currentColor" stroke-width="0.5" />
+
+      {rings.map((ring, i) => (
+        <g class="ad-radial__ring" style={`--ring-delay:${i * 90}ms;`}>
+          {/* track */}
+          <circle
+            cx={cx} cy={cy} r={ring.radius}
+            fill="none"
+            stroke="currentColor"
+            stroke-width={ringWidth}
+            opacity="0.12"
+          />
+          {/* fill */}
+          <circle
+            class:list={['ad-radial__fill', ring.signal && 'ad-radial__fill--signal']}
+            cx={cx} cy={cy} r={ring.radius}
+            fill="none"
+            stroke="currentColor"
+            stroke-width={ringWidth}
+            stroke-dasharray={`${ring.t * ring.circ} ${ring.circ}`}
+            stroke-dashoffset={animated ? ring.circ : 0}
+            transform={`rotate(-90 ${cx} ${cy})`}
+            style={`--ring-circ:${ring.circ};`}
+          />
+          {/* tick at end of fill */}
+          {ring.t > 0 && (
+            <circle
+              cx={cx} cy={cy - ring.radius}
+              r={ringWidth / 2 + 1}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+              opacity="0"
+              class="ad-radial__cap"
+            />
+          )}
+        </g>
+      ))}
+    </svg>
+
+    <ul class="ad-radial__legend">
+      {rings.map((ring) => (
+        <li class:list={['ad-radial__item', ring.signal && 'ad-radial__item--signal']}>
+          <span class="ad-radial__name">{ring.name}</span>
+          <span class="ad-radial__value">{Math.round(ring.value)}<span class="ad-radial__max">/{ring.max}</span></span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</figure>
+
+<style>
+  .ad-radial {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    margin: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+  }
+
+  .ad-radial__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-radial__title {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-radial__code {
+    color: var(--ad-muted);
+  }
+
+  .ad-radial__body {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--ad-space-4);
+    align-items: center;
+  }
+
+  .ad-radial__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  .ad-radial__fill {
+    animation: ad-radial-sweep var(--ad-dur-sweep) var(--ad-ease-step12) forwards;
+    animation-delay: var(--ring-delay, 0ms);
+  }
+
+  @keyframes ad-radial-sweep {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .ad-radial__fill--signal {
+    color: var(--ad-signal);
+  }
+
+  .ad-radial__legend {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-1);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-radial__item {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ad-space-3);
+    border-bottom: var(--ad-border-hair) dotted var(--ad-grid);
+    padding-bottom: 2px;
+  }
+
+  .ad-radial__name {
+    color: var(--ad-ink);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-radial__value {
+    color: var(--ad-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ad-radial__max {
+    color: var(--ad-muted);
+  }
+
+  .ad-radial__item--signal .ad-radial__value {
+    color: var(--ad-signal);
+  }
+</style>

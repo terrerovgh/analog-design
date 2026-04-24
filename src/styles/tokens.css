@@ -25,6 +25,12 @@
   --ad-rule:       var(--ad-ink);
   --ad-muted:      var(--ad-graphite-5);
   --ad-grid:       var(--ad-graphite-3);
+  --ad-surface:    color-mix(in srgb, var(--ad-paper) 88%, var(--ad-ink) 12%);
+  --ad-surface-2:  color-mix(in srgb, var(--ad-paper) 82%, var(--ad-ink) 18%);
+  --ad-elevated:   color-mix(in srgb, var(--ad-paper) 94%, var(--ad-ink) 6%);
+  --ad-toggle-track: var(--ad-graphite-1);
+  --ad-toggle-thumb: var(--ad-ink);
+  --ad-toggle-icon:  var(--ad-paper);
 
   /* ---------- TYPOGRAPHY ---------- */
   --ad-font-mono:  'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono',
@@ -94,6 +100,31 @@
 
   /* ---------- ELEVATION ---------- */
   /* No shadows. Use rules and brackets instead. */
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --ad-ink:        #f3efe6;
+  --ad-paper:      #121313;
+  --ad-graphite-9: #f3efe6;
+  --ad-graphite-7: #b9b1a2;
+  --ad-graphite-5: #8b8378;
+  --ad-graphite-3: #464038;
+  --ad-graphite-1: #22211f;
+  --ad-signal:     #ff6a3d;
+
+  --ad-fg:         var(--ad-ink);
+  --ad-bg:         var(--ad-paper);
+  --ad-rule:       var(--ad-ink);
+  --ad-muted:      var(--ad-graphite-5);
+  --ad-grid:       var(--ad-graphite-3);
+  --ad-surface:    color-mix(in srgb, var(--ad-paper) 86%, var(--ad-ink) 14%);
+  --ad-surface-2:  color-mix(in srgb, var(--ad-paper) 80%, var(--ad-ink) 20%);
+  --ad-elevated:   color-mix(in srgb, var(--ad-paper) 92%, var(--ad-ink) 8%);
+  --ad-toggle-track: color-mix(in srgb, var(--ad-paper) 72%, var(--ad-ink) 28%);
+  --ad-toggle-thumb: var(--ad-ink);
+  --ad-toggle-icon:  var(--ad-paper);
+  color-scheme: dark;
 }
 
 /* =========================================================
@@ -116,6 +147,17 @@ html, body {
   line-height: var(--ad-leading-snug);
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+}
+
+html {
+  background: var(--ad-bg);
+}
+
+body {
+  min-height: 100dvh;
+  transition:
+    background-color var(--ad-dur-sweep) var(--ad-ease-step6),
+    color var(--ad-dur-tick) var(--ad-ease-step);
 }
 
 ::selection {
@@ -182,6 +224,11 @@ html, body {
   to   { stroke-dashoffset: 0; }
 }
 
+@keyframes ad-dash-flow {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+
 @keyframes ad-traverse {
   from { offset-distance: 0%;   opacity: 0; }
   10%  { opacity: 1; }
@@ -198,6 +245,16 @@ html, body {
   /* steps-based "tick" rotation for knobs */
   from { transform: rotate(var(--ad-tick-from, 0deg));   }
   to   { transform: rotate(var(--ad-tick-to,   360deg)); }
+}
+
+@keyframes ad-fade-step {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ad-marker-flash {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.35; }
 }
 
 /* Reduced motion — full override */

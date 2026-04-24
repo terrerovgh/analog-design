@@ -1,0 +1,180 @@
+---
+interface Props {
+  label?: string;
+}
+
+const { label = 'Theme' } = Astro.props;
+---
+
+<button
+  class="theme-toggle"
+  type="button"
+  aria-label={`${label}: toggle dark mode`}
+  aria-pressed="false"
+  data-theme-toggle
+>
+  <span class="theme-toggle__label">{label}</span>
+  <span class="theme-toggle__track" aria-hidden="true">
+    <span class="theme-toggle__thumb">
+      <span class="theme-toggle__icon theme-toggle__icon--light">L</span>
+      <span class="theme-toggle__icon theme-toggle__icon--dark">D</span>
+    </span>
+  </span>
+</button>
+
+<script>
+  const root = document.documentElement;
+  const storageKey = 'analog-design-theme';
+  const toggles = Array.from(document.querySelectorAll('[data-theme-toggle]'));
+
+  const getSystemTheme = () =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+  const getResolvedTheme = () => {
+    const stored = window.localStorage.getItem(storageKey);
+    return stored === 'dark' || stored === 'light' ? stored : getSystemTheme();
+  };
+
+  const syncToggles = (theme) => {
+    for (const toggle of toggles) {
+      const isDark = theme === 'dark';
+      toggle.setAttribute('aria-pressed', String(isDark));
+      toggle.setAttribute('data-theme-state', theme);
+      toggle.setAttribute('aria-label', isDark ? 'Theme: switch to light mode' : 'Theme: switch to dark mode');
+    }
+  };
+
+  const applyTheme = (theme) => {
+    root.dataset.theme = theme;
+    syncToggles(theme);
+  };
+
+  applyTheme(getResolvedTheme());
+
+  for (const toggle of toggles) {
+    toggle.addEventListener('click', () => {
+      const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      window.localStorage.setItem(storageKey, nextTheme);
+      applyTheme(nextTheme);
+    });
+  }
+
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  media.addEventListener('change', () => {
+    const stored = window.localStorage.getItem(storageKey);
+    if (stored !== 'dark' && stored !== 'light') {
+      applyTheme(getSystemTheme());
+    }
+  });
+</script>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ad-space-3);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ad-fg);
+    font: inherit;
+    text-transform: uppercase;
+    letter-spacing: var(--ad-track-wide);
+    cursor: pointer;
+  }
+
+  .theme-toggle__label {
+    font-size: var(--ad-text-2xs);
+    color: var(--ad-muted);
+  }
+
+  .theme-toggle__track {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 56px;
+    height: 24px;
+    padding: 2px;
+    border: var(--ad-border-hair) solid var(--ad-rule);
+    background:
+      linear-gradient(90deg, var(--ad-surface-2) 0 50%, var(--ad-surface) 50% 100%);
+    overflow: hidden;
+  }
+
+  .theme-toggle__track::before,
+  .theme-toggle__track::after {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    font-weight: var(--ad-weight-bold);
+    line-height: 1;
+    color: var(--ad-muted);
+  }
+
+  .theme-toggle__track::before {
+    content: 'L';
+    left: 7px;
+  }
+
+  .theme-toggle__track::after {
+    content: 'D';
+    right: 7px;
+  }
+
+  .theme-toggle__thumb {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 18px;
+    border: var(--ad-border-hair) solid var(--ad-rule);
+    background: var(--ad-toggle-thumb);
+    color: var(--ad-toggle-icon);
+    transform: translateX(0);
+    transition:
+      transform var(--ad-dur-tick) var(--ad-ease-step),
+      background-color var(--ad-dur-tick) var(--ad-ease-step),
+      color var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .theme-toggle[data-theme-state='dark'] .theme-toggle__thumb {
+    transform: translateX(30px);
+  }
+
+  .theme-toggle__icon {
+    position: absolute;
+    font-size: 9px;
+    font-weight: var(--ad-weight-bold);
+    line-height: 1;
+    opacity: 0;
+    transition: opacity var(--ad-dur-blink) var(--ad-ease-step);
+  }
+
+  .theme-toggle__icon--light {
+    opacity: 1;
+  }
+
+  .theme-toggle[data-theme-state='dark'] .theme-toggle__icon--light {
+    opacity: 0;
+  }
+
+  .theme-toggle[data-theme-state='dark'] .theme-toggle__icon--dark {
+    opacity: 1;
+  }
+
+  .theme-toggle:hover .theme-toggle__track {
+    background:
+      linear-gradient(90deg, var(--ad-surface) 0 50%, var(--ad-surface-2) 50% 100%);
+  }
+
+  .theme-toggle:focus-visible {
+    outline: none;
+  }
+
+  .theme-toggle:focus-visible .theme-toggle__track {
+    outline: var(--ad-border-bold) solid var(--ad-rule);
+    outline-offset: 2px;
+  }
+</style>

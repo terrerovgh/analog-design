@@ -1,0 +1,274 @@
+---
+import Catalog        from '../layouts/Catalog.astro';
+import Panel          from '../components/Panel.astro';
+import AsciiDivider   from '../components/AsciiDivider.astro';
+import StatusBadge    from '../components/StatusBadge.astro';
+
+import Gauge          from '../components/Gauge.astro';
+import RadialChart    from '../components/RadialChart.astro';
+import Treemap        from '../components/Treemap.astro';
+import WaterfallChart from '../components/WaterfallChart.astro';
+import GeoMap         from '../components/GeoMap.astro';
+
+const stations = [
+  { id: 'NYC', lat:  40.7, lon:  -74.0, state: 'active' as const, pulse: true,  label: 'NEW YORK' },
+  { id: 'SFO', lat:  37.6, lon: -122.4, state: 'active' as const,                label: 'SAN FRAN' },
+  { id: 'LON', lat:  51.5, lon:   -0.1, state: 'active' as const,                label: 'LONDON' },
+  { id: 'BER', lat:  52.5, lon:   13.4, state: 'idle'   as const,                label: 'BERLIN' },
+  { id: 'TYO', lat:  35.7, lon:  139.7, state: 'active' as const, pulse: true,  label: 'TOKYO' },
+  { id: 'SYD', lat: -33.9, lon:  151.2, state: 'active' as const,                label: 'SYDNEY' },
+  { id: 'GRU', lat: -23.5, lon:  -46.6, state: 'idle'   as const,                label: 'SAO PAULO' },
+  { id: 'JNB', lat: -26.2, lon:   28.0, state: 'down'   as const,                label: 'JOHANNESBURG' },
+  { id: 'DXB', lat:  25.2, lon:   55.3, state: 'active' as const,                label: 'DUBAI' },
+  { id: 'HKG', lat:  22.3, lon:  114.2, state: 'active' as const,                label: 'HONG KONG' },
+];
+---
+
+<Catalog
+  title="Analog Design Analytics Pack"
+  seoTitle="Analog Design Analytics Pack"
+  description="Analytics primitives for Analog Design — gauges, radial dials, treemaps, waterfall bridges, and abstract geographic maps."
+  seoDescription="Analytics primitives for Analog Design — gauges, radial dials, treemaps, waterfall bridges, and abstract geographic maps."
+  channel="Analytics Pack"
+  nav={[
+    { href: '/',          label: 'Component Catalog',  shortLabel: 'Catalog',   meta: 'Foundation Set' },
+    { href: '/v3',        label: 'Expansion Pack',     shortLabel: 'Expansion', meta: 'Advanced Motion + UI' },
+    { href: '/v4',        label: 'Control Pack',       shortLabel: 'Controls',  meta: 'Forms + Tabs + Dialog' },
+    { href: '/v5',        label: 'Analytics Pack',     shortLabel: 'Analytics', meta: 'Charts + Maps' },
+    { href: '/dashboard', label: 'Dashboard Spec',     shortLabel: 'Dashboard', meta: 'Operator Layout Pattern' },
+  ]}
+>
+  <section class="hero">
+    <div>
+      <span class="hero__eyebrow">// ANALOG DESIGN — v0.5 — ANALYTICS PRIMITIVES</span>
+      <h1 class="hero__title">
+        ANALYTICS<br />PACK
+        <span class="hero__kana">分析器</span>
+      </h1>
+      <p class="hero__lede">
+        Five analytical primitives for dashboards that have to communicate
+        magnitude, distribution, change-over-time, and location at a glance.
+        Stepped reveals, no decorative motion, instrument-grade frames.
+      </p>
+      <div class="hero__chips">
+        <StatusBadge state="active" label="GAUGE" id="01" />
+        <StatusBadge state="active" label="RADIAL" id="02" />
+        <StatusBadge state="active" label="TREEMAP" id="03" />
+        <StatusBadge state="active" label="WATERFALL" id="04" />
+        <StatusBadge state="active" label="GEOMAP" id="05" />
+      </div>
+    </div>
+
+    <Panel channel="MANIFEST" id="PACK-05" footer="MAGNITUDE / DISTRIBUTION / FLOW / LOCATION" kana="量">
+      <ul class="manifest">
+        <li><strong>Gauge</strong> — semicircular dial with needle and warning zone</li>
+        <li><strong>RadialChart</strong> — concentric capacity rings with legend</li>
+        <li><strong>Treemap</strong> — squarified rectangles for distribution</li>
+        <li><strong>WaterfallChart</strong> — bridge bars with running total</li>
+        <li><strong>GeoMap</strong> — plate-carrée map with station markers</li>
+      </ul>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="double" label="MAGNITUDE — GAUGES" />
+
+  <section class="section">
+    <Panel channel="GAUGE" id="GA-01" footer="USE FOR SINGLE-VALUE MAGNITUDE WITH BOUNDED RANGE" kana="計">
+      <div class="row">
+        <Gauge label="THROTTLE" value={72} unit="%" code="01" />
+        <Gauge label="THERMAL" value={84} max={120} unit="C" warnFrom={90} code="02" signal />
+        <Gauge label="UPLINK" value={94} unit="%" warnFrom={85} code="03" />
+        <Gauge label="ABORT" value={4} max={10} unit="S" warnFrom={3} code="04" signal />
+      </div>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="solid" label="DISTRIBUTION — RADIAL + TREEMAP" />
+
+  <section class="section">
+    <div class="grid grid--2">
+      <Panel channel="RADIALCHART" id="RA-01" footer="USE FOR MULTI-RESOURCE CAPACITY AT A GLANCE" kana="輪">
+        <RadialChart
+          title="CAPACITY"
+          code="HOST-A"
+          series={[
+            { name: 'CPU',  value: 72 },
+            { name: 'MEM',  value: 58 },
+            { name: 'NET',  value: 34 },
+            { name: 'DISK', value: 91, signal: true },
+          ]}
+        />
+      </Panel>
+
+      <Panel channel="TREEMAP" id="TM-01" footer="SIZE = SHARE OF TOTAL — LIMIT TO ~10 ITEMS" kana="比">
+        <Treemap
+          title="LOAD_DISTRIBUTION"
+          code="ZONE-7"
+          unit="K"
+          items={[
+            { name: 'NORTH',  value: 480, code: '01' },
+            { name: 'SOUTH',  value: 320, code: '02' },
+            { name: 'EAST',   value: 220, code: '03' },
+            { name: 'WEST',   value: 180, code: '04', signal: true },
+            { name: 'CENTER', value:  90, code: '05' },
+            { name: 'EDGE',   value:  60, code: '06' },
+          ]}
+        />
+      </Panel>
+    </div>
+  </section>
+
+  <AsciiDivider variant="double" label="CHANGE OVER TIME — WATERFALL" />
+
+  <section class="section">
+    <Panel channel="WATERFALLCHART" id="WF-01" footer="USE FOR BRIDGE NARRATIVES — START → CHANGES → TOTAL" kana="差">
+      <WaterfallChart
+        title="QUARTER_BRIDGE"
+        code="REV-Q1"
+        unit="K"
+        steps={[
+          { label: 'OPEN',   value: 1200, type: 'start' },
+          { label: 'NEW',    value:  340 },
+          { label: 'EXPAND', value:  180 },
+          { label: 'CHURN',  value: -120 },
+          { label: 'REFUND', value:  -60 },
+          { label: 'CLOSE',  value:    0, type: 'total' },
+        ]}
+      />
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="solid" label="LOCATION — GEOMAP" />
+
+  <section class="section">
+    <div class="grid grid--1">
+      <Panel channel="GEOMAP — INTERACTIVE" id="GM-01" footer="WHEEL TO ZOOM · DRAG TO PAN · RESET TO HOME" kana="地">
+        <GeoMap
+          title="GROUND_STATIONS"
+          code="MESH-9"
+          projection="mercator"
+          markers={stations}
+          connections={[
+            { from: 'NYC', to: 'LON' },
+            { from: 'LON', to: 'TYO' },
+            { from: 'TYO', to: 'SYD' },
+            { from: 'SFO', to: 'TYO', signal: true },
+            { from: 'DXB', to: 'JNB' },
+            { from: 'NYC', to: 'GRU' },
+            { from: 'BER', to: 'DXB' },
+            { from: 'SYD', to: 'HKG' },
+          ]}
+          width={960}
+          height={520}
+          labelAtZoom={2.5}
+        />
+      </Panel>
+
+      <Panel channel="GEOMAP — REFERENCE" id="GM-02" footer="PLATE-CARRÉE · STATIC OVERVIEW" kana="図">
+        <GeoMap
+          title="WORLD_REFERENCE"
+          code="REF-1"
+          projection="equirectangular"
+          markers={stations}
+          width={720}
+          height={360}
+          static
+          graticule
+        />
+      </Panel>
+    </div>
+  </section>
+</Catalog>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: var(--ad-space-8);
+    align-items: start;
+    padding: var(--ad-space-8) 0 var(--ad-space-10);
+  }
+
+  .hero__eyebrow {
+    display: block;
+    margin-bottom: var(--ad-space-4);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .hero__title {
+    margin: 0 0 var(--ad-space-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-3xl);
+    line-height: 0.94;
+    letter-spacing: var(--ad-track-tight);
+  }
+
+  .hero__kana {
+    display: block;
+    margin-top: var(--ad-space-2);
+    font-family: var(--ad-font-jp);
+    font-size: var(--ad-text-md);
+    letter-spacing: var(--ad-track-mega);
+    color: var(--ad-muted);
+  }
+
+  .hero__lede {
+    max-width: 58ch;
+    margin: 0 0 var(--ad-space-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .hero__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-2);
+  }
+
+  .manifest {
+    margin: 0;
+    padding-left: var(--ad-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    font-size: var(--ad-text-xs);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .manifest strong { color: var(--ad-ink); }
+
+  .section { padding: var(--ad-space-8) 0; }
+
+  .row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--ad-space-6);
+    align-items: end;
+    justify-items: center;
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--ad-space-6);
+  }
+
+  .grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+
+  .grid--1 {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: 1fr; }
+  }
+</style>

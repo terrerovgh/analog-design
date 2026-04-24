@@ -1,0 +1,227 @@
+---
+/**
+ * SelectField — native <select> wrapped with Analog frame and a
+ * stepped chevron indicator. Keeps native keyboard semantics.
+ *
+ * @example
+ *   <SelectField
+ *     id="ch" label="CHANNEL" code="OPS"
+ *     options={[
+ *       { value:'a', label:'CH-01 ALPHA' },
+ *       { value:'b', label:'CH-02 BRAVO' },
+ *       { value:'c', label:'CH-03 CHARLIE' },
+ *     ]}
+ *     value="b"
+ *   />
+ */
+
+interface Option {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+interface Props {
+  id: string;
+  label: string;
+  name?: string;
+  options: Option[];
+  value?: string;
+  code?: string;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  placeholder?: string;
+}
+
+const {
+  id,
+  label,
+  name = id,
+  options,
+  value,
+  code,
+  hint,
+  error,
+  required = false,
+  disabled = false,
+  placeholder,
+} = Astro.props;
+
+const hintId = hint ? `${id}-hint` : undefined;
+const errorId = error ? `${id}-error` : undefined;
+const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+---
+
+<div class:list={['ad-select', error && 'ad-select--error', disabled && 'ad-select--disabled']}>
+  <div class="ad-select__head">
+    <label class="ad-select__label" for={id}>
+      <span class="ad-select__label-text">{label}</span>
+      {required && <span class="ad-select__req" aria-hidden="true">*</span>}
+    </label>
+    {code && <span class="ad-select__code">[{code}]</span>}
+  </div>
+
+  <div class="ad-select__field">
+    <select
+      class="ad-select__control"
+      id={id}
+      name={name}
+      disabled={disabled}
+      required={required}
+      aria-invalid={error ? 'true' : undefined}
+      aria-describedby={describedBy}
+    >
+      {placeholder && <option value="" disabled selected={value === undefined}>{placeholder}</option>}
+      {options.map((opt) => (
+        <option value={opt.value} selected={value === opt.value} disabled={opt.disabled}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+    <span class="ad-select__chevron" aria-hidden="true">
+      <span></span>
+      <span></span>
+    </span>
+  </div>
+
+  {(hint || error) && (
+    <div class="ad-select__foot">
+      {hint && !error && <span class="ad-select__hint" id={hintId}>{hint}</span>}
+      {error && <span class="ad-select__error" id={errorId} role="alert">! {error}</span>}
+    </div>
+  )}
+</div>
+
+<style>
+  .ad-select {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-1);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    width: 100%;
+  }
+
+  .ad-select__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--ad-space-2);
+  }
+
+  .ad-select__label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    cursor: pointer;
+  }
+
+  .ad-select__label-text {
+    font-weight: var(--ad-weight-bold);
+    color: var(--ad-ink);
+  }
+
+  .ad-select__req {
+    color: var(--ad-signal);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-select__code {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-select__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: var(--ad-border-hair) solid var(--ad-rule);
+    background: var(--ad-elevated);
+    transition: border-color var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .ad-select__field:focus-within {
+    border-color: var(--ad-ink);
+    border-width: var(--ad-border-bold);
+    background: var(--ad-paper);
+  }
+
+  .ad-select__control {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--ad-space-2) var(--ad-space-3);
+    padding-right: var(--ad-space-8);
+    border: 0;
+    background: transparent;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    letter-spacing: var(--ad-track-flat);
+    text-transform: uppercase;
+    line-height: 1.4;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+
+  .ad-select__control:disabled {
+    color: var(--ad-graphite-5);
+    cursor: not-allowed;
+  }
+
+  .ad-select__chevron {
+    position: absolute;
+    right: var(--ad-space-3);
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+  }
+
+  .ad-select__chevron span {
+    display: block;
+    width: 10px;
+    height: 0;
+    border-top: var(--ad-border-bold) solid var(--ad-ink);
+  }
+
+  .ad-select__chevron span:first-child { opacity: 0.4; }
+
+  .ad-select__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ad-space-2);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-select__hint {
+    color: var(--ad-muted);
+  }
+
+  .ad-select__error {
+    color: var(--ad-signal);
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-select--error .ad-select__field {
+    border-color: var(--ad-signal);
+  }
+
+  .ad-select--disabled .ad-select__field {
+    background: var(--ad-graphite-1);
+    border-style: dashed;
+  }
+</style>

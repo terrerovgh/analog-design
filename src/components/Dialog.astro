@@ -1,0 +1,224 @@
+---
+/**
+ * Dialog — modal frame using the native <dialog> element.
+ * Provides Analog header, body slot, and optional footer slot.
+ * Open via JS: `document.getElementById('id').showModal()`.
+ * Close via the close button, the backdrop, or `Esc`.
+ *
+ * @example
+ *   <Dialog id="confirm" title="ABORT_SEQUENCE" code="OPS-04" channel="CONTROL">
+ *     <p>Are you sure you want to abort the current run?</p>
+ *     <Fragment slot="footer">
+ *       <KeycapButton label="CANCEL" data-close />
+ *       <KeycapButton label="ABORT" signal data-confirm />
+ *     </Fragment>
+ *   </Dialog>
+ *
+ *   <KeycapButton label="OPEN" data-open="confirm" />
+ */
+
+interface Props {
+  id: string;
+  title: string;
+  channel?: string;
+  code?: string;
+  closeLabel?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  title,
+  channel = 'DIALOG',
+  code,
+  closeLabel = 'CLOSE',
+  size = 'md',
+} = Astro.props;
+
+const hasFooter = Astro.slots.has('footer');
+---
+
+<dialog
+  id={id}
+  class:list={['ad-dialog', `ad-dialog--${size}`]}
+  aria-labelledby={`${id}-title`}
+>
+  <header class="ad-dialog__head">
+    <div class="ad-dialog__chan">
+      <span class="ad-dialog__dot ad-blink" aria-hidden="true"></span>
+      <span class="ad-dialog__channel">{channel}</span>
+      {code && <span class="ad-dialog__code">[{code}]</span>}
+    </div>
+    <button
+      class="ad-dialog__close"
+      type="button"
+      aria-label={`${closeLabel} dialog`}
+      data-close-dialog={id}
+    >
+      <span aria-hidden="true">×</span>
+      <span class="ad-dialog__close-label">{closeLabel}</span>
+    </button>
+  </header>
+
+  <h2 class="ad-dialog__title" id={`${id}-title`}>{title}</h2>
+
+  <div class="ad-dialog__body">
+    <slot />
+  </div>
+
+  {hasFooter && (
+    <footer class="ad-dialog__foot">
+      <slot name="footer" />
+    </footer>
+  )}
+</dialog>
+
+<script>
+  // Wire openers and closers globally — works for any Dialog instance.
+  document.querySelectorAll<HTMLElement>('[data-open]').forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const id = trigger.dataset.open;
+      if (!id) return;
+      const dlg = document.getElementById(id) as HTMLDialogElement | null;
+      dlg?.showModal();
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-close-dialog]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.closeDialog;
+      if (!id) return;
+      const dlg = document.getElementById(id) as HTMLDialogElement | null;
+      dlg?.close();
+    });
+  });
+
+  // Close when clicking backdrop / data-close inside footer
+  document.querySelectorAll<HTMLDialogElement>('dialog.ad-dialog').forEach((dlg) => {
+    dlg.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target === dlg) {
+        dlg.close();
+        return;
+      }
+      if (target.closest('[data-close]')) dlg.close();
+    });
+  });
+</script>
+
+<style>
+  .ad-dialog {
+    padding: 0;
+    border: var(--ad-border-bold) solid var(--ad-ink);
+    background: var(--ad-paper);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    width: min(100%, 520px);
+  }
+
+  .ad-dialog--sm { width: min(100%, 380px); }
+  .ad-dialog--lg { width: min(100%, 720px); }
+
+  .ad-dialog::backdrop {
+    background: color-mix(in srgb, var(--ad-ink) 56%, transparent);
+    backdrop-filter: blur(2px);
+  }
+
+  .ad-dialog[open] {
+    animation: ad-dialog-in var(--ad-dur-tick) var(--ad-ease-step) backwards;
+  }
+
+  @keyframes ad-dialog-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+
+  .ad-dialog__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ad-space-3);
+    padding: var(--ad-space-2) var(--ad-space-3);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-elevated);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-dialog__chan {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ad-space-2);
+  }
+
+  .ad-dialog__dot {
+    width: 6px;
+    height: 6px;
+    background: var(--ad-signal);
+    display: inline-block;
+  }
+
+  .ad-dialog__channel {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-dialog__code {
+    color: var(--ad-muted);
+  }
+
+  .ad-dialog__close {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px var(--ad-space-2);
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .ad-dialog__close:hover {
+    background: var(--ad-ink);
+    color: var(--ad-paper);
+  }
+
+  .ad-dialog__close-label {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-dialog__title {
+    margin: 0;
+    padding: var(--ad-space-4) var(--ad-space-4) var(--ad-space-2);
+    font-size: var(--ad-text-lg);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-tight);
+  }
+
+  .ad-dialog__body {
+    padding: var(--ad-space-2) var(--ad-space-4) var(--ad-space-4);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+  }
+
+  .ad-dialog__body :global(p) {
+    margin: 0;
+  }
+
+  .ad-dialog__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ad-space-2);
+    padding: var(--ad-space-3) var(--ad-space-4);
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-elevated);
+  }
+</style>

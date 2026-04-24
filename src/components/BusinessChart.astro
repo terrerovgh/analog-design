@@ -54,6 +54,15 @@ const {
   unit = '',
 } = Astro.props;
 
+const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID().replace(/-/g, '')
+  : `${width}-${height}-${labels.length}-${series.length}`;
+const stripeId = `ad-bchart-stripe-${instanceId}`;
+const dotId = `ad-bchart-dot-${instanceId}`;
+const gridId = `ad-bchart-grid-${instanceId}`;
+const patternFor = (style: string) =>
+  style === 'striped' ? stripeId : style === 'dotted' ? dotId : style === 'gridded' ? gridId : stripeId;
+
 // Layout
 const padL = 40;
 const padR = 12;
@@ -120,13 +129,13 @@ const buildAreaPath = (data: number[]) => {
   >
     {/* SVG defs — fill patterns for series */}
     <defs>
-      <pattern id="ad-bchart-stripe" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <pattern id={stripeId} width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" stroke-width="1" />
       </pattern>
-      <pattern id="ad-bchart-dot" width="4" height="4" patternUnits="userSpaceOnUse">
+      <pattern id={dotId} width="4" height="4" patternUnits="userSpaceOnUse">
         <circle cx="2" cy="2" r="0.8" fill="currentColor" />
       </pattern>
-      <pattern id="ad-bchart-grid" width="6" height="6" patternUnits="userSpaceOnUse">
+      <pattern id={gridId} width="6" height="6" patternUnits="userSpaceOnUse">
         <path d="M0 0 H6 M0 0 V6" stroke="currentColor" stroke-width="0.5" fill="none" />
       </pattern>
     </defs>
@@ -161,7 +170,7 @@ const buildAreaPath = (data: number[]) => {
 
     {/* SERIES ============================================== */}
     {type === 'bar' && series.map((s, sIdx) => {
-      const fillRef = `url(#ad-bchart-${seriesStyles[sIdx % 4] === 'striped' ? 'stripe' : seriesStyles[sIdx % 4] === 'dotted' ? 'dot' : seriesStyles[sIdx % 4] === 'gridded' ? 'grid' : 'stripe'})`;
+      const fillRef = `url(#${patternFor(seriesStyles[sIdx % 4])})`;
       return (
         <g class="ad-bchart__series" style={`--delay:${sIdx * 80}ms;`}>
           {s.data.map((v, i) => {
@@ -169,7 +178,7 @@ const buildAreaPath = (data: number[]) => {
             const y = yPos(v);
             const h = padT + innerH - y;
             return (
-              <g class="ad-bchart__bar" style={`--bar-h:${padT + innerH}px;`}>
+              <g class="ad-bchart__bar" style={`--bar-delay:${sIdx * 80 + i * 70}ms;`}>
                 <rect x={x} y={y} width={barW} height={h}
                   fill={seriesStyles[sIdx % 4] === 'solid' ? 'currentColor' : fillRef}
                   stroke="currentColor" stroke-width="1" />
@@ -182,6 +191,13 @@ const buildAreaPath = (data: number[]) => {
 
     {type === 'line' && series.map((s, sIdx) => (
       <g class="ad-bchart__series" style={`--delay:${sIdx * 120}ms;`}>
+        <path d={buildLinePath(s.data)}
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          opacity="0.14"
+          class="ad-bchart__line ad-bchart__line--ghost"
+          style={`--ad-stream-length:${innerW * 2};`} />
         <path d={buildLinePath(s.data)}
           fill="none"
           stroke="currentColor"
@@ -206,9 +222,11 @@ const buildAreaPath = (data: number[]) => {
     {type === 'area' && series.map((s, sIdx) => (
       <g class="ad-bchart__series" style={`--delay:${sIdx * 120}ms;`}>
         <path d={buildAreaPath(s.data)}
-          fill={`url(#ad-bchart-${seriesStyles[sIdx % 4] === 'striped' ? 'stripe' : 'dot'})`}
+          fill={`url(#${patternFor(seriesStyles[sIdx % 4])})`}
           stroke="currentColor"
-          stroke-width="1.2" />
+          stroke-width="1.2"
+          class="ad-bchart__area"
+          style={`--ad-stream-length:${innerW * 2};`} />
       </g>
     ))}
   </svg>
@@ -278,15 +296,8 @@ const buildAreaPath = (data: number[]) => {
     transform-origin: center bottom;
     transform-box: fill-box;
     animation: ad-grow-y var(--ad-dur-sweep) var(--ad-ease-step6) backwards;
-    animation-delay: var(--delay, 0ms);
+    animation-delay: var(--bar-delay, 0ms);
   }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(2) { animation-delay: calc(var(--delay) + 60ms); }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(3) { animation-delay: calc(var(--delay) + 120ms); }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(4) { animation-delay: calc(var(--delay) + 180ms); }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(5) { animation-delay: calc(var(--delay) + 240ms); }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(6) { animation-delay: calc(var(--delay) + 300ms); }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(7) { animation-delay: calc(var(--delay) + 360ms); }
-  .ad-bchart--animated .ad-bchart__bar:nth-child(8) { animation-delay: calc(var(--delay) + 420ms); }
 
   /* ===== Line animation — stroke reveal + dot pop ===== */
   .ad-bchart--animated .ad-bchart__line {
@@ -296,15 +307,29 @@ const buildAreaPath = (data: number[]) => {
     animation-delay: var(--delay, 0ms);
   }
 
+  .ad-bchart__line--ghost {
+    opacity: 0.14;
+  }
+
   .ad-bchart--animated .ad-bchart__dot {
     opacity: 0;
     animation: ad-pop var(--ad-dur-tick) var(--ad-ease-step) forwards;
-    animation-delay: var(--dot-delay, 0ms);
+    animation-delay: calc(var(--delay, 0ms) + var(--dot-delay, 0ms) + 80ms);
   }
 
   @keyframes ad-pop {
     from { opacity: 0; transform: scale(0); }
     to   { opacity: 1; transform: scale(1); }
+  }
+
+  .ad-bchart--animated .ad-bchart__area {
+    opacity: 0;
+    stroke-dasharray: var(--ad-stream-length, 600);
+    stroke-dashoffset: var(--ad-stream-length, 600);
+    animation:
+      ad-fade-step var(--ad-dur-tick) var(--ad-ease-step) forwards,
+      ad-stream calc(var(--ad-dur-orbit) / 2) var(--ad-ease-step24) forwards;
+    animation-delay: var(--delay, 0ms), var(--delay, 0ms);
   }
 
   /* ===== Legend ===== */

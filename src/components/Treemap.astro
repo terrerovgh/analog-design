@@ -1,0 +1,271 @@
+---
+/**
+ * Treemap — squarified rectangle layout for hierarchical sums.
+ * Single-level (root → children). Bigger value → bigger box.
+ * Brutalist labels with code/value lines and stepped fill patterns.
+ *
+ * @example
+ *   <Treemap
+ *     title="LOAD_DISTRIBUTION"
+ *     items={[
+ *       { name:'A', value: 480, code:'01' },
+ *       { name:'B', value: 320, code:'02' },
+ *       { name:'C', value: 220, code:'03' },
+ *       { name:'D', value: 180, code:'04' },
+ *       { name:'E', value:  90, code:'05' },
+ *       { name:'F', value:  60, code:'06' },
+ *     ]}
+ *   />
+ */
+
+interface Item {
+  name: string;
+  value: number;
+  code?: string;
+  signal?: boolean;
+}
+
+interface Props {
+  title?: string;
+  code?: string;
+  items: Item[];
+  width?: number;
+  height?: number;
+  unit?: string;
+}
+
+const {
+  title,
+  code,
+  items,
+  width = 480,
+  height = 280,
+  unit = '',
+} = Astro.props;
+
+// Squarified treemap (Bruls et al, 2000) — clean, classic.
+type Rect = { x: number; y: number; w: number; h: number };
+type Tile = Item & Rect;
+
+const sortedItems = [...items].sort((a, b) => b.value - a.value);
+const total = sortedItems.reduce((s, it) => s + it.value, 0) || 1;
+const area = width * height;
+const scaled = sortedItems.map((it) => ({ ...it, _area: (it.value / total) * area }));
+
+const worst = (row: number[], w: number) => {
+  if (row.length === 0) return Infinity;
+  const s = row.reduce((a, b) => a + b, 0);
+  const rmax = Math.max(...row);
+  const rmin = Math.min(...row);
+  const w2 = w * w;
+  const s2 = s * s;
+  return Math.max((w2 * rmax) / s2, s2 / (w2 * rmin));
+};
+
+const layoutRow = (row: { _area: number }[], rect: Rect, horizontal: boolean): Rect[] => {
+  const sum = row.reduce((s, x) => s + x._area, 0);
+  const out: Rect[] = [];
+  if (horizontal) {
+    const h = sum / rect.w;
+    let x = rect.x;
+    for (const it of row) {
+      const w = it._area / h;
+      out.push({ x, y: rect.y, w, h });
+      x += w;
+    }
+  } else {
+    const w = sum / rect.h;
+    let y = rect.y;
+    for (const it of row) {
+      const h = it._area / w;
+      out.push({ x: rect.x, y, w, h });
+      y += h;
+    }
+  }
+  return out;
+};
+
+const squarify = (children: typeof scaled, rect: Rect): Tile[] => {
+  if (children.length === 0) return [];
+  const out: Tile[] = [];
+  let remaining = [...children];
+  let cur = { ...rect };
+
+  while (remaining.length > 0) {
+    const horizontal = cur.w >= cur.h;
+    const w = horizontal ? cur.h : cur.w;
+    const row: typeof scaled = [];
+
+    for (let i = 0; i < remaining.length; i++) {
+      const next = [...row, remaining[i]];
+      if (worst(next.map((n) => n._area), w) <= worst(row.map((n) => n._area), w) || row.length === 0) {
+        row.push(remaining[i]);
+      } else {
+        break;
+      }
+    }
+
+    const placed = layoutRow(row, cur, horizontal);
+    placed.forEach((rect, i) => out.push({ ...row[i], ...rect }));
+
+    const consumedSum = row.reduce((s, x) => s + x._area, 0);
+    if (horizontal) {
+      const h = consumedSum / cur.w;
+      cur = { x: cur.x, y: cur.y + h, w: cur.w, h: cur.h - h };
+    } else {
+      const w2 = consumedSum / cur.h;
+      cur = { x: cur.x + w2, y: cur.y, w: cur.w - w2, h: cur.h };
+    }
+
+    remaining = remaining.slice(row.length);
+  }
+
+  return out;
+};
+
+const tiles = squarify(scaled, { x: 0, y: 0, w: width, h: height });
+const fillStyles = ['solid', 'striped', 'dotted', 'gridded'] as const;
+---
+
+<figure class="ad-treemap">
+  {(title || code) && (
+    <figcaption class="ad-treemap__head">
+      {title && <span class="ad-treemap__title">{title}</span>}
+      {code && <span class="ad-treemap__code">[{code}]</span>}
+    </figcaption>
+  )}
+
+  <div class="ad-treemap__frame" style={`aspect-ratio: ${width} / ${height};`}>
+    {tiles.map((tile, i) => {
+      const fillKind = fillStyles[i % fillStyles.length];
+      const pct = ((tile.value / total) * 100).toFixed(1);
+      const left = (tile.x / width) * 100;
+      const top = (tile.y / height) * 100;
+      const w = (tile.w / width) * 100;
+      const h = (tile.h / height) * 100;
+      const small = tile.w < 70 || tile.h < 50;
+      return (
+        <div
+          class:list={[
+            'ad-treemap__tile',
+            `ad-treemap__tile--${fillKind}`,
+            tile.signal && 'ad-treemap__tile--signal',
+            small && 'ad-treemap__tile--small',
+          ]}
+          style={`left:${left}%; top:${top}%; width:${w}%; height:${h}%; --tile-delay:${i * 80}ms;`}
+        >
+          <div class="ad-treemap__tile-head">
+            <span class="ad-treemap__tile-name">{tile.name}</span>
+            {tile.code && <span class="ad-treemap__tile-code">[{tile.code}]</span>}
+          </div>
+          {!small && (
+            <div class="ad-treemap__tile-foot">
+              <span class="ad-treemap__tile-value">{tile.value}{unit}</span>
+              <span class="ad-treemap__tile-pct">{pct}%</span>
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+</figure>
+
+<style>
+  .ad-treemap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    margin: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+  }
+
+  .ad-treemap__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-treemap__title { font-weight: var(--ad-weight-bold); }
+  .ad-treemap__code  { color: var(--ad-muted); }
+
+  .ad-treemap__frame {
+    position: relative;
+    width: 100%;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-elevated);
+  }
+
+  .ad-treemap__tile {
+    position: absolute;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-paper);
+    overflow: hidden;
+    padding: var(--ad-space-2);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--ad-space-1);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    opacity: 0;
+    animation: ad-fade-step var(--ad-dur-tick) var(--ad-ease-step) forwards;
+    animation-delay: var(--tile-delay, 0ms);
+  }
+
+  .ad-treemap__tile--small { padding: 4px 6px; }
+
+  .ad-treemap__tile--striped {
+    background:
+      repeating-linear-gradient(45deg,
+        var(--ad-ink) 0 1px, transparent 1px 5px),
+      var(--ad-paper);
+  }
+  .ad-treemap__tile--dotted {
+    background:
+      radial-gradient(var(--ad-ink) 0.6px, transparent 1px) 0 0 / 5px 5px,
+      var(--ad-paper);
+  }
+  .ad-treemap__tile--gridded {
+    background:
+      linear-gradient(to right, var(--ad-ink) 0 0.5px, transparent 0.5px) 0 0 / 6px 100%,
+      linear-gradient(to bottom, var(--ad-ink) 0 0.5px, transparent 0.5px) 0 0 / 100% 6px,
+      var(--ad-paper);
+  }
+
+  .ad-treemap__tile--signal {
+    border-color: var(--ad-signal);
+    background: color-mix(in srgb, var(--ad-signal) 12%, var(--ad-paper));
+  }
+
+  .ad-treemap__tile-head,
+  .ad-treemap__tile-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--ad-space-2);
+    background: color-mix(in srgb, var(--ad-paper) 88%, transparent);
+    padding: 2px 4px;
+    margin: -2px -4px;
+  }
+
+  .ad-treemap__tile-name {
+    font-weight: var(--ad-weight-bold);
+    font-size: var(--ad-text-xs);
+    color: var(--ad-ink);
+  }
+
+  .ad-treemap__tile-code,
+  .ad-treemap__tile-pct { color: var(--ad-muted); }
+
+  .ad-treemap__tile-value {
+    font-variant-numeric: tabular-nums;
+    color: var(--ad-ink);
+  }
+</style>

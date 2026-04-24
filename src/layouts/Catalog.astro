@@ -4,28 +4,46 @@
  * Loads tokens, fonts, and provides a bracketed viewport with
  * a header strip and footer strip.
  */
+import ThemeToggle from '../components/ThemeToggle.astro';
 
-interface NavItem { href: string; label: string; }
+interface NavItem {
+  href: string;
+  label: string;
+  shortLabel?: string;
+  meta?: string;
+}
 
 interface Props {
   title?: string;
   description?: string;
   channel?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoImage?: string;
   nav?: NavItem[];
 }
 
 const {
-  title = 'ANALOG_DESIGN',
-  description = 'Analog Design is a brutalist, monochrome component catalog for instrument-like interfaces built with Astro.',
-  channel = 'ARCHIVE_LOG',
+  title = 'Analog Design',
+  description = 'Analog Design is a brutalist monochrome component catalog for instrument-like interfaces built with Astro.',
+  channel = 'Catalog',
+  seoTitle = title,
+  seoDescription = description,
+  seoImage = '/og/analog-design.png',
   nav = [
-    { href: '/',          label: 'V0.2 — FOUNDATION' },
-    { href: '/v3',        label: 'V0.3 — EXPANSION'  },
-    { href: '/dashboard', label: 'SPEC — DASHBOARD'  },
+    { href: '/',          label: 'Component Catalog',  shortLabel: 'Catalog',   meta: 'Foundation Set' },
+    { href: '/v3',        label: 'Expansion Pack',     shortLabel: 'Expansion', meta: 'Advanced Motion + UI' },
+    { href: '/v4',        label: 'Control Pack',       shortLabel: 'Controls',  meta: 'Forms + Tabs + Dialog' },
+    { href: '/v5',        label: 'Analytics Pack',     shortLabel: 'Analytics', meta: 'Charts + Maps' },
+    { href: '/dashboard', label: 'Dashboard Spec',     shortLabel: 'Dashboard', meta: 'Operator Layout Pattern' },
   ],
 } = Astro.props;
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : Astro.url.toString();
 const baseUrl = import.meta.env.BASE_URL ?? '/';
+const seoImageUrl = new URL(
+  seoImage.startsWith('http') ? seoImage : `${baseUrl.replace(/\/$/, '')}${seoImage}`,
+  Astro.site ?? Astro.url
+).toString();
 const stripBase = (path: string) => {
   const normalizedBase = baseUrl.replace(/\/$/, '');
   if (normalizedBase && normalizedBase !== '/' && path.startsWith(normalizedBase)) {
@@ -34,12 +52,23 @@ const stripBase = (path: string) => {
   return path || '/';
 };
 const currentPath = stripBase(Astro.url.pathname.replace(/\/$/, '') || '/');
+const currentNav = nav.find((item) => item.href === '/'
+  ? currentPath === '/'
+  : currentPath.startsWith(item.href));
 const withBase = (href: string) => {
   if (href === '/') return baseUrl;
   return `${baseUrl.replace(/\/$/, '')}${href}`;
 };
 const now = new Date();
 const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
+const seo = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Analog Design',
+  description: seoDescription,
+  url: canonical,
+  image: seoImageUrl,
+};
 ---
 
 <!doctype html>
@@ -48,8 +77,31 @@ const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <meta name="description" content={description} />
+    <meta name="description" content={seoDescription} />
     <link rel="canonical" href={canonical} />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Analog Design" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={seoImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={seoTitle} />
+    <meta name="twitter:description" content={seoDescription} />
+    <meta name="twitter:image" content={seoImageUrl} />
+    <script type="application/ld+json" set:html={JSON.stringify(seo)} />
+    <script is:inline>
+      (() => {
+        const storageKey = 'analog-design-theme';
+        const stored = window.localStorage.getItem(storageKey);
+        const theme =
+          stored === 'dark' || stored === 'light'
+            ? stored
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <style is:global>
       @import '../styles/tokens.css';
     </style>
@@ -60,11 +112,12 @@ const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
       <header class="strip strip--top">
         <div class="strip__left">
           <span class="strip__dot ad-blink" aria-hidden="true"></span>
-          <span class="strip__brand">ANALOG_DESIGN</span>
+          <span class="strip__brand">ANALOG DESIGN</span>
           <span class="strip__sep">//</span>
           <span class="strip__channel">{channel}</span>
         </div>
         <div class="strip__right">
+          <ThemeToggle label="Mode" />
           <span class="strip__meta">VER 1.2</span>
           <span class="strip__meta">{stamp}</span>
           <span class="strip__meta">NODE EGH-9320</span>
@@ -72,17 +125,31 @@ const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
       </header>
 
       {/* Page nav strip */}
-      <nav class="nav" aria-label="catalog pages">
+      <nav class="nav" aria-label="site navigation">
+        <div class="nav__intro">
+          <span class="nav__eyebrow">Navigate</span>
+          <strong class="nav__current">{currentNav?.shortLabel ?? 'Catalog'}</strong>
+        </div>
+        <div class="nav__links">
         {nav.map((item) => {
           const active = (item.href === '/' ? currentPath === '/' : currentPath.startsWith(item.href));
           return (
-            <a href={withBase(item.href)} class:list={['nav__link', active && 'nav__link--active']}>
-              <span class="nav__bracket" aria-hidden="true">[</span>
-              {item.label}
-              <span class="nav__bracket" aria-hidden="true">]</span>
+            <a
+              href={withBase(item.href)}
+              class:list={['nav__link', active && 'nav__link--active']}
+              aria-current={active ? 'page' : undefined}
+            >
+              <span class="nav__index" aria-hidden="true">
+                {String(nav.indexOf(item) + 1).padStart(2, '0')}
+              </span>
+              <span class="nav__copy">
+                <span class="nav__label">{item.label}</span>
+                {item.meta && <span class="nav__meta">{item.meta}</span>}
+              </span>
             </a>
           );
         })}
+        </div>
       </nav>
 
       <main class="frame">
@@ -105,7 +172,8 @@ const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
     min-height: 100dvh;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    background: var(--ad-paper);
+    background: var(--ad-bg);
+    transition: background-color var(--ad-dur-sweep) var(--ad-ease-step6);
   }
 
   .strip {
@@ -114,6 +182,7 @@ const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
     justify-content: space-between;
     padding: var(--ad-space-2) var(--ad-space-4);
     border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    background: var(--ad-elevated);
     font-family: var(--ad-font-mono);
     font-size: var(--ad-text-2xs);
     letter-spacing: var(--ad-track-wide);
@@ -165,41 +234,120 @@ const stamp = now.toISOString().replace('T', ' ').slice(0, 19);
 
   .nav {
     display: flex;
-    gap: var(--ad-space-1);
-    padding: var(--ad-space-2) var(--ad-space-4);
+    align-items: stretch;
+    justify-content: space-between;
+    gap: var(--ad-space-4);
+    padding: var(--ad-space-3) var(--ad-space-4);
     border-bottom: var(--ad-border-hair) dotted var(--ad-graphite-5);
+    background: var(--ad-surface);
     font-family: var(--ad-font-mono);
     font-size: var(--ad-text-2xs);
     letter-spacing: var(--ad-track-wide);
     text-transform: uppercase;
-    flex-wrap: wrap;
+  }
+
+  .nav__intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 160px;
+    padding-right: var(--ad-space-4);
+    border-right: var(--ad-border-hair) solid var(--ad-grid);
+  }
+
+  .nav__eyebrow {
+    color: var(--ad-muted);
+  }
+
+  .nav__current {
+    margin-top: 2px;
+    font-size: var(--ad-text-sm);
+    color: var(--ad-fg);
+  }
+
+  .nav__links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ad-space-2);
+    flex: 1;
   }
 
   .nav__link {
-    color: var(--ad-muted);
+    color: var(--ad-fg);
     text-decoration: none;
-    padding: 4px 8px;
+    padding: var(--ad-space-2) var(--ad-space-3);
     display: inline-flex;
-    gap: 2px;
-    align-items: center;
-    transition: color var(--ad-dur-blink) var(--ad-ease-step);
+    gap: var(--ad-space-3);
+    align-items: flex-start;
+    border: var(--ad-border-hair) solid var(--ad-grid);
+    background: var(--ad-elevated);
+    min-height: 56px;
+    transition:
+      color var(--ad-dur-blink) var(--ad-ease-step),
+      border-color var(--ad-dur-blink) var(--ad-ease-step),
+      background-color var(--ad-dur-blink) var(--ad-ease-step);
   }
 
   .nav__link:hover {
     color: var(--ad-ink);
+    border-color: var(--ad-rule);
   }
 
   .nav__link--active {
     color: var(--ad-ink);
     font-weight: var(--ad-weight-bold);
-    background: var(--ad-graphite-1);
+    background: var(--ad-surface-2);
+    border-color: var(--ad-rule);
   }
 
-  .nav__bracket {
-    color: var(--ad-graphite-5);
+  .nav__index {
+    min-width: 18px;
+    color: var(--ad-muted);
+    font-variant-numeric: tabular-nums;
   }
 
-  .nav__link--active .nav__bracket {
-    color: var(--ad-ink);
+  .nav__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .nav__label {
+    font-size: var(--ad-text-xs);
+    line-height: 1.2;
+  }
+
+  .nav__meta {
+    color: var(--ad-muted);
+    font-size: 9px;
+    letter-spacing: var(--ad-track-wide);
+    line-height: 1.2;
+  }
+
+  @media (max-width: 720px) {
+    .strip {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .strip__right {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .nav {
+      flex-direction: column;
+    }
+
+    .nav__intro {
+      border-right: 0;
+      border-bottom: var(--ad-border-hair) solid var(--ad-grid);
+      padding-right: 0;
+      padding-bottom: var(--ad-space-3);
+    }
+
+    .nav__links {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

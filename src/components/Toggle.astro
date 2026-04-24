@@ -1,0 +1,174 @@
+---
+/**
+ * Toggle — generic two-state switch with stepped thumb travel.
+ * Native checkbox underneath for form semantics + keyboard.
+ *
+ * @example
+ *   <Toggle id="arm" label="ARM" />
+ *   <Toggle id="rec" label="RECORD" onLabel="REC" offLabel="OFF" signal />
+ */
+
+interface Props {
+  id: string;
+  label: string;
+  name?: string;
+  checked?: boolean;
+  disabled?: boolean;
+  onLabel?: string;
+  offLabel?: string;
+  signal?: boolean;
+  hint?: string;
+}
+
+const {
+  id,
+  label,
+  name = id,
+  checked = false,
+  disabled = false,
+  onLabel = 'ON',
+  offLabel = 'OFF',
+  signal = false,
+  hint,
+} = Astro.props;
+
+const hintId = hint ? `${id}-hint` : undefined;
+---
+
+<label
+  class:list={[
+    'ad-toggle',
+    checked && 'ad-toggle--on',
+    signal && 'ad-toggle--signal',
+    disabled && 'ad-toggle--disabled',
+  ]}
+  for={id}
+>
+  <input
+    class="ad-toggle__input"
+    id={id}
+    name={name}
+    type="checkbox"
+    checked={checked}
+    disabled={disabled}
+    aria-describedby={hintId}
+  />
+  <span class="ad-toggle__copy">
+    <span class="ad-toggle__label">{label}</span>
+    {hint && <span class="ad-toggle__hint" id={hintId}>{hint}</span>}
+  </span>
+  <span class="ad-toggle__track" aria-hidden="true">
+    <span class="ad-toggle__legend ad-toggle__legend--on">{onLabel}</span>
+    <span class="ad-toggle__legend ad-toggle__legend--off">{offLabel}</span>
+    <span class="ad-toggle__thumb"></span>
+  </span>
+</label>
+
+<script>
+  const toggles = document.querySelectorAll<HTMLLabelElement>('.ad-toggle');
+  for (const root of toggles) {
+    const input = root.querySelector<HTMLInputElement>('.ad-toggle__input');
+    if (!input) continue;
+    const sync = () => root.classList.toggle('ad-toggle--on', input.checked);
+    input.addEventListener('change', sync);
+    sync();
+  }
+</script>
+
+<style>
+  .ad-toggle {
+    display: inline-grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--ad-space-3);
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ad-toggle__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  .ad-toggle__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ad-toggle__label {
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-toggle__hint {
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-toggle__track {
+    position: relative;
+    width: 64px;
+    height: 26px;
+    border: var(--ad-border-hair) solid var(--ad-rule);
+    background: var(--ad-toggle-track);
+    overflow: hidden;
+  }
+
+  .ad-toggle__legend {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    color: var(--ad-muted);
+    pointer-events: none;
+  }
+
+  .ad-toggle__legend--on  { left: 6px; }
+  .ad-toggle__legend--off { right: 6px; }
+
+  .ad-toggle__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 28px;
+    height: 20px;
+    background: var(--ad-toggle-thumb);
+    border: var(--ad-border-hair) solid var(--ad-rule);
+    transform: translateX(32px);
+    transition: transform var(--ad-dur-tick) var(--ad-ease-step),
+                background-color var(--ad-dur-tick) var(--ad-ease-step);
+  }
+
+  .ad-toggle--on .ad-toggle__thumb {
+    transform: translateX(0);
+  }
+
+  .ad-toggle--signal.ad-toggle--on .ad-toggle__thumb {
+    background: var(--ad-signal);
+  }
+
+  .ad-toggle__input:focus-visible + .ad-toggle__copy + .ad-toggle__track {
+    outline: var(--ad-border-bold) solid var(--ad-ink);
+    outline-offset: 2px;
+  }
+
+  .ad-toggle--disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+</style>

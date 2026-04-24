@@ -1,0 +1,390 @@
+---
+import Catalog       from '../layouts/Catalog.astro';
+import Panel         from '../components/Panel.astro';
+import AsciiDivider  from '../components/AsciiDivider.astro';
+import StatusBadge   from '../components/StatusBadge.astro';
+import KanaLabel     from '../components/KanaLabel.astro';
+
+import InputField    from '../components/InputField.astro';
+import SelectField   from '../components/SelectField.astro';
+import Toggle        from '../components/Toggle.astro';
+import Slider        from '../components/Slider.astro';
+import Tabs          from '../components/Tabs.astro';
+import Dialog        from '../components/Dialog.astro';
+---
+
+<Catalog
+  title="Analog Design Control Pack"
+  seoTitle="Analog Design Control Pack"
+  description="Form primitives and operator controls for Analog Design — inputs, selects, toggles, sliders, tab navigation, and modal dialog frame."
+  seoDescription="Form primitives and operator controls for Analog Design — inputs, selects, toggles, sliders, tab navigation, and modal dialog frame."
+  channel="Control Pack"
+  nav={[
+    { href: '/',          label: 'Component Catalog',  shortLabel: 'Catalog',   meta: 'Foundation Set' },
+    { href: '/v3',        label: 'Expansion Pack',     shortLabel: 'Expansion', meta: 'Advanced Motion + UI' },
+    { href: '/v4',        label: 'Control Pack',       shortLabel: 'Controls',  meta: 'Forms + Tabs + Dialog' },
+    { href: '/dashboard', label: 'Dashboard Spec',     shortLabel: 'Dashboard', meta: 'Operator Layout Pattern' },
+  ]}
+>
+  <section class="hero">
+    <div>
+      <span class="hero__eyebrow">// ANALOG DESIGN — v0.4 — CONTROL PRIMITIVES</span>
+      <h1 class="hero__title">
+        CONTROL<br />PACK
+        <span class="hero__kana">操作器</span>
+      </h1>
+      <p class="hero__lede">
+        Operator-grade form primitives. Native semantics, monospace typography,
+        stepped motion. Every control reads like an instrument label and behaves
+        like a physical switch.
+      </p>
+      <div class="hero__chips">
+        <StatusBadge state="active" label="FORMS" id="V0.4" />
+        <StatusBadge state="processing" label="A11Y_PASS" id="WCAG" />
+        <StatusBadge state="standby" label="ZERO_DEPS" id="JS-ISLE" />
+      </div>
+    </div>
+
+    <Panel channel="MANIFEST" id="PACK-04" footer="6 NEW PRIMITIVES — NATIVE FIRST" kana="器">
+      <ul class="manifest">
+        <li><strong>InputField</strong> — text / number / email with bracket frame and unit suffix</li>
+        <li><strong>SelectField</strong> — native select with stepped chevron</li>
+        <li><strong>Toggle</strong> — generic two-state switch with stepped thumb</li>
+        <li><strong>Slider</strong> — range with tick rail and live readout</li>
+        <li><strong>Tabs</strong> — segmented control with arrow-key navigation</li>
+        <li><strong>Dialog</strong> — modal frame using native &lt;dialog&gt;</li>
+      </ul>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="double" label="INPUT_PRIMITIVES" />
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Text Inputs</h2>
+      <span class="section__meta">Bracketed frame · blinking caret on focus · explicit error state</span>
+    </header>
+
+    <Panel channel="INPUTFIELD" id="IN-01" footer="LABEL ABOVE / UNIT INSIDE / ERROR BELOW" kana="文">
+      <form class="form" onsubmit="event.preventDefault()">
+        <div class="grid grid--2">
+          <InputField id="cs"  label="CALL_SIGN"  code="OPS-01"  placeholder="EGH-9320" />
+          <InputField id="tp"  label="THROUGHPUT" type="number"  unit="MBPS" value="236" hint="Max 1000" />
+          <InputField id="em"  label="EMAIL"      type="email"   placeholder="ops@station.io" required />
+          <InputField id="pw"  label="PASSCODE"   type="password" value="hunter2" error="WEAK CIPHER — MIN 12 CHARS" />
+          <InputField id="ro"  label="NODE_ID"    value="0xD17"  readonly code="LOCKED" />
+          <InputField id="dis" label="LEGACY"     value="--"     disabled />
+        </div>
+      </form>
+    </Panel>
+  </section>
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Select &amp; Toggle</h2>
+      <span class="section__meta">Native semantics · keyboard parity · two-state visual cues</span>
+    </header>
+
+    <div class="grid grid--2">
+      <Panel channel="SELECTFIELD" id="SE-01" footer="WRAPS NATIVE SELECT — FULL KEYBOARD" kana="択">
+        <div class="form">
+          <SelectField
+            id="ch"
+            label="CHANNEL"
+            code="OPS"
+            value="b"
+            options={[
+              { value: 'a', label: 'CH-01 ALPHA' },
+              { value: 'b', label: 'CH-02 BRAVO' },
+              { value: 'c', label: 'CH-03 CHARLIE' },
+              { value: 'd', label: 'CH-04 DELTA' },
+            ]}
+          />
+          <SelectField
+            id="rate"
+            label="SAMPLE_RATE"
+            code="DSP"
+            placeholder="-- SELECT --"
+            options={[
+              { value: '44',  label: '44.1 KHZ' },
+              { value: '48',  label: '48 KHZ' },
+              { value: '96',  label: '96 KHZ' },
+              { value: '192', label: '192 KHZ' },
+            ]}
+            hint="Hardware-locked above 96"
+          />
+          <SelectField
+            id="mode"
+            label="MODE"
+            options={[{ value: '1', label: 'STANDBY' }, { value: '2', label: 'OFFLINE' }]}
+            error="UNREACHABLE — RETRY UPLINK"
+          />
+        </div>
+      </Panel>
+
+      <Panel channel="TOGGLE" id="TG-01" footer="GENERIC SWITCH — SIGNAL VARIANT FOR LIVE STATES" kana="切">
+        <div class="form">
+          <Toggle id="arm"     label="ARM_SEQUENCE"   onLabel="ARM"   offLabel="SAFE" hint="Required before launch" />
+          <Toggle id="rec"     label="RECORD"         onLabel="REC"   offLabel="STBY" signal checked />
+          <Toggle id="quiet"   label="QUIET_HOURS"    onLabel="ON"    offLabel="OFF" />
+          <Toggle id="legacy"  label="LEGACY_PROTO"   disabled />
+        </div>
+      </Panel>
+    </div>
+  </section>
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Sliders</h2>
+      <span class="section__meta">Stepped tick rail · live readout · keyboard arrows</span>
+    </header>
+
+    <Panel channel="SLIDER" id="SL-01" footer="USE FOR CONTINUOUS RANGES — PAIR WITH UNIT" kana="量">
+      <div class="form form--stack">
+        <Slider id="gain"   label="GAIN"        min={0}  max={100} value={72} unit="%"  />
+        <Slider id="thresh" label="THRESHOLD"   min={-60} max={0}  value={-12} unit="DB" ticks={13} />
+        <Slider id="freq"   label="FREQ"        min={20} max={2000} value={440} unit="HZ" />
+        <Slider id="abort"  label="ABORT_DELAY" min={0}  max={30}  value={5}  unit="S"  signal />
+      </div>
+    </Panel>
+  </section>
+
+  <AsciiDivider variant="solid" label="NAVIGATION_PRIMITIVES" />
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Tabs</h2>
+      <span class="section__meta">Segmented control · arrow-key + Home/End navigation · ARIA tablist</span>
+    </header>
+
+    <Panel channel="TABS" id="TB-01" footer="PANELS ARE PROGRESSIVE-ENHANCEMENT FRIENDLY" kana="頁">
+      <Tabs
+        id="ops"
+        label="Operator views"
+        active="live"
+        tabs={[
+          { id: 'live',  label: 'LIVE',   code: '01' },
+          { id: 'queue', label: 'QUEUE',  code: '02' },
+          { id: 'log',   label: 'LOG',    code: '03' },
+          { id: 'arc',   label: 'ARCHIVE', code: '04', disabled: true },
+        ]}
+      >
+        <section role="tabpanel" id="ops-panel-live" aria-labelledby="ops-tab-live">
+          <KanaLabel kana="生中継" latin="LIVE_FEED" />
+          <p>Active monitoring of all uplink channels. Use the rail above to switch operator views without navigating away from the current scope.</p>
+        </section>
+        <section role="tabpanel" id="ops-panel-queue" aria-labelledby="ops-tab-queue" hidden>
+          <KanaLabel kana="待機列" latin="QUEUE" />
+          <p>Pending workloads. Items can be promoted, deprioritized, or aborted from the operator console.</p>
+        </section>
+        <section role="tabpanel" id="ops-panel-log" aria-labelledby="ops-tab-log" hidden>
+          <KanaLabel kana="記録" latin="EVENT_LOG" />
+          <p>Append-only operator event log with timestamps and severity tagging.</p>
+        </section>
+      </Tabs>
+    </Panel>
+  </section>
+
+  <section class="section">
+    <header class="section__head">
+      <h2 class="section__title">Dialog</h2>
+      <span class="section__meta">Native &lt;dialog&gt; · Esc-close · backdrop dismiss · focus trap</span>
+    </header>
+
+    <Panel channel="DIALOG" id="DL-01" footer="USE FOR DESTRUCTIVE OR BLOCKING ACTIONS ONLY" kana="窓">
+      <div class="dialog-demo">
+        <p class="dialog-demo__text">
+          Modal frames are reserved for actions that require explicit operator
+          confirmation. Open the demo to see the framed dialog with backdrop and
+          stepped enter animation.
+        </p>
+        <div class="dialog-demo__actions">
+          <button class="ad-demo-btn" type="button" data-open="confirm-abort">OPEN CONFIRM</button>
+          <button class="ad-demo-btn ad-demo-btn--ghost" type="button" data-open="connection-info">OPEN INFO</button>
+        </div>
+      </div>
+    </Panel>
+  </section>
+</Catalog>
+
+<Dialog id="confirm-abort" title="ABORT CURRENT RUN?" channel="CONTROL" code="OPS-04">
+  <p>This will halt sequence <strong>D-03</strong> and roll back the active verification window. The action cannot be undone.</p>
+  <p>Operator confirmation is required.</p>
+  <Fragment slot="footer">
+    <button class="ad-demo-btn" type="button" data-close>CANCEL</button>
+    <button class="ad-demo-btn ad-demo-btn--signal" type="button" data-close>ABORT</button>
+  </Fragment>
+</Dialog>
+
+<Dialog id="connection-info" title="UPLINK STATUS" channel="DIAGNOSTIC" code="NET-9" size="sm">
+  <p>Carrier locked at 99.94% sync. Three nodes report degraded latency in the last 60 seconds.</p>
+  <Fragment slot="footer">
+    <button class="ad-demo-btn" type="button" data-close>DISMISS</button>
+  </Fragment>
+</Dialog>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: var(--ad-space-8);
+    align-items: start;
+    padding: var(--ad-space-8) 0 var(--ad-space-10);
+  }
+
+  .hero__eyebrow {
+    display: block;
+    margin-bottom: var(--ad-space-4);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .hero__title {
+    margin: 0 0 var(--ad-space-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-3xl);
+    line-height: 0.94;
+    letter-spacing: var(--ad-track-tight);
+  }
+
+  .hero__kana {
+    display: block;
+    margin-top: var(--ad-space-2);
+    font-family: var(--ad-font-jp);
+    font-size: var(--ad-text-md);
+    letter-spacing: var(--ad-track-mega);
+    color: var(--ad-muted);
+  }
+
+  .hero__lede {
+    max-width: 58ch;
+    margin: 0 0 var(--ad-space-5);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .hero__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ad-space-2);
+  }
+
+  .manifest {
+    margin: 0;
+    padding-left: var(--ad-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    font-size: var(--ad-text-xs);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .manifest strong {
+    color: var(--ad-ink);
+  }
+
+  .section { padding: var(--ad-space-8) 0; }
+
+  .section__head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ad-space-4);
+    align-items: baseline;
+    margin-bottom: var(--ad-space-6);
+  }
+
+  .section__title {
+    margin: 0;
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-md);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .section__meta {
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--ad-space-6);
+  }
+
+  .grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .form {
+    display: grid;
+    gap: var(--ad-space-4);
+  }
+
+  .form--stack {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-demo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-3);
+  }
+
+  .dialog-demo__text {
+    margin: 0;
+    font-size: var(--ad-text-sm);
+    line-height: var(--ad-leading-prose);
+    color: var(--ad-graphite-7);
+  }
+
+  .dialog-demo__actions {
+    display: flex;
+    gap: var(--ad-space-2);
+    flex-wrap: wrap;
+  }
+
+  .ad-demo-btn {
+    padding: var(--ad-space-2) var(--ad-space-4);
+    border: var(--ad-border-bold) solid var(--ad-ink);
+    background: var(--ad-ink);
+    color: var(--ad-paper);
+    font-family: var(--ad-font-mono);
+    font-size: var(--ad-text-2xs);
+    font-weight: var(--ad-weight-bold);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .ad-demo-btn:hover { background: var(--ad-paper); color: var(--ad-ink); }
+
+  .ad-demo-btn--ghost {
+    background: var(--ad-paper);
+    color: var(--ad-ink);
+  }
+
+  .ad-demo-btn--ghost:hover { background: var(--ad-ink); color: var(--ad-paper); }
+
+  .ad-demo-btn--signal {
+    background: var(--ad-signal);
+    border-color: var(--ad-signal);
+    color: var(--ad-paper);
+  }
+
+  .ad-demo-btn--signal:hover { background: var(--ad-paper); color: var(--ad-signal); }
+
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: 1fr; }
+  }
+</style>

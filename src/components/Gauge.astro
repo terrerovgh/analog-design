@@ -1,0 +1,245 @@
+---
+/**
+ * Gauge — semicircular instrument dial with stepped tick arc,
+ * needle, and numeric readout. Marks an optional warning zone.
+ *
+ * @example
+ *   <Gauge label="THROTTLE" value={72} unit="%" />
+ *   <Gauge label="THERMAL" value={84} max={120} unit="C" warnFrom={90} signal />
+ */
+
+interface Props {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  unit?: string;
+  /** Start of the warning zone (in value units) */
+  warnFrom?: number;
+  /** Number of major ticks across the arc */
+  ticks?: number;
+  /** Number of minor ticks between each major tick */
+  subTicks?: number;
+  width?: number;
+  signal?: boolean;
+  code?: string;
+  animated?: boolean;
+}
+
+const {
+  label,
+  value,
+  min = 0,
+  max = 100,
+  unit = '',
+  warnFrom,
+  ticks = 9,
+  subTicks = 4,
+  width = 240,
+  signal = false,
+  code,
+  animated = true,
+} = Astro.props;
+
+const height = Math.round(width * 0.62);
+const cx = width / 2;
+const cy = height - 16;
+const r = width / 2 - 18;
+
+const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
+const v = clamp(value, min, max);
+const range = max - min || 1;
+const valueT = (v - min) / range;
+const warnT = warnFrom !== undefined ? (clamp(warnFrom, min, max) - min) / range : 1;
+
+// arc covers 180deg from left (180) to right (0)
+const angleAt = (t: number) => Math.PI - t * Math.PI;
+const polar = (t: number, radius: number) => {
+  const a = angleAt(t);
+  return { x: cx + Math.cos(a) * radius, y: cy - Math.sin(a) * radius };
+};
+
+const arcPath = (t0: number, t1: number, radius: number) => {
+  const p0 = polar(t0, radius);
+  const p1 = polar(t1, radius);
+  const large = Math.abs(t1 - t0) > 0.5 ? 1 : 0;
+  // sweep flag 0 because angle decreases as t increases (CW visually)
+  return `M ${p0.x} ${p0.y} A ${radius} ${radius} 0 ${large} 0 ${p1.x} ${p1.y}`;
+};
+
+const needle = polar(valueT, r - 8);
+const isWarn = warnFrom !== undefined && v >= warnFrom;
+---
+
+<figure class:list={['ad-gauge', signal && 'ad-gauge--signal', isWarn && 'ad-gauge--warn', animated && 'ad-gauge--animated']}>
+  <svg
+    class="ad-gauge__svg"
+    width="100%"
+    viewBox={`0 0 ${width} ${height + 36}`}
+    role="img"
+    aria-label={`${label} ${value}${unit}`}
+  >
+    {/* outer arc track */}
+    <path d={arcPath(0, 1, r)} fill="none" stroke="currentColor" stroke-width="1" opacity="0.35" />
+
+    {/* warn zone */}
+    {warnFrom !== undefined && (
+      <path
+        d={arcPath(warnT, 1, r)}
+        fill="none"
+        stroke="var(--ad-signal)"
+        stroke-width="3"
+        stroke-dasharray="3 3"
+      />
+    )}
+
+    {/* tick marks */}
+    {Array.from({ length: ticks }).map((_, i) => {
+      const t = i / (ticks - 1);
+      const inner = polar(t, r - 6);
+      const outer = polar(t, r + 4);
+      return (
+        <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y}
+          stroke="currentColor" stroke-width="1.5" />
+      );
+    })}
+
+    {/* sub ticks */}
+    {Array.from({ length: (ticks - 1) * subTicks }).map((_, i) => {
+      const t = (i + 1) / ((ticks - 1) * subTicks + 1);
+      const inner = polar(t, r - 4);
+      const outer = polar(t, r + 1);
+      return (
+        <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y}
+          stroke="currentColor" stroke-width="0.5" opacity="0.6" />
+      );
+    })}
+
+    {/* tick labels (min, mid, max) */}
+    {[0, 0.5, 1].map((t) => {
+      const p = polar(t, r + 14);
+      return (
+        <text x={p.x} y={p.y + 3}
+          font-family="var(--ad-font-mono)"
+          font-size="9"
+          fill="var(--ad-muted)"
+          text-anchor="middle"
+          letter-spacing="0.08em">
+          {Math.round(min + range * t)}
+        </text>
+      );
+    })}
+
+    {/* sweep arc — value */}
+    <path
+      class="ad-gauge__sweep"
+      d={arcPath(0, valueT, r - 12)}
+      fill="none"
+      stroke="currentColor"
+      stroke-width="3"
+      style={`--sweep-len:${Math.PI * (r - 12)};`}
+    />
+
+    {/* needle */}
+    <g class="ad-gauge__needle" style={`--needle-angle:${(1 - valueT) * 180}deg; transform-origin:${cx}px ${cy}px;`}>
+      <line x1={cx} y1={cy} x2={cx + r - 4} y2={cy}
+        stroke="currentColor" stroke-width="2" />
+      <polygon points={`${cx + r - 8},${cy - 3} ${cx + r - 4},${cy} ${cx + r - 8},${cy + 3}`}
+        fill="currentColor" />
+    </g>
+
+    {/* hub */}
+    <circle cx={cx} cy={cy} r="6" fill="var(--ad-paper)" stroke="currentColor" stroke-width="1.5" />
+    <circle cx={cx} cy={cy} r="2" fill="currentColor" />
+
+    {/* readout */}
+    <text x={cx} y={cy + 28}
+      font-family="var(--ad-font-mono)"
+      font-size="18"
+      font-weight="700"
+      fill="currentColor"
+      text-anchor="middle"
+      letter-spacing="-0.01em">{Math.round(v)}<tspan font-size="10" letter-spacing="0.08em" fill="var(--ad-muted)">  {unit}</tspan></text>
+  </svg>
+
+  <figcaption class="ad-gauge__cap">
+    <span class="ad-gauge__label">{label}</span>
+    {code && <span class="ad-gauge__code">[{code}]</span>}
+  </figcaption>
+</figure>
+
+<style>
+  .ad-gauge {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--ad-space-1);
+    margin: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+  }
+
+  .ad-gauge__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  .ad-gauge__cap {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--ad-space-2);
+    padding-top: var(--ad-space-1);
+    border-top: var(--ad-border-hair) solid var(--ad-ink);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-gauge__label {
+    font-weight: var(--ad-weight-bold);
+  }
+
+  .ad-gauge__code {
+    color: var(--ad-muted);
+  }
+
+  .ad-gauge__needle {
+    transform: rotate(180deg);
+  }
+
+  .ad-gauge--animated .ad-gauge__needle {
+    animation: ad-gauge-swing var(--ad-dur-sweep) var(--ad-ease-step12) backwards;
+  }
+
+  @keyframes ad-gauge-swing {
+    from { transform: rotate(180deg); }
+    to   { transform: rotate(var(--needle-angle, 90deg)); }
+  }
+
+  .ad-gauge:not(.ad-gauge--animated) .ad-gauge__needle {
+    transform: rotate(var(--needle-angle, 90deg));
+  }
+  /* Final needle position when animation completes */
+  .ad-gauge--animated .ad-gauge__needle {
+    transform: rotate(var(--needle-angle, 90deg));
+  }
+
+  .ad-gauge--animated .ad-gauge__sweep {
+    stroke-dasharray: var(--sweep-len, 200);
+    stroke-dashoffset: var(--sweep-len, 200);
+    animation: ad-gauge-fill var(--ad-dur-sweep) var(--ad-ease-step12) forwards;
+  }
+
+  @keyframes ad-gauge-fill {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .ad-gauge--warn .ad-gauge__needle,
+  .ad-gauge--signal .ad-gauge__sweep {
+    color: var(--ad-signal);
+  }
+
+  .ad-gauge--warn {
+    color: var(--ad-signal);
+  }
+</style>
