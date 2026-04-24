@@ -105,6 +105,8 @@ const [cols, rows] = grid;
       })}
 
       {/* the trace itself — drawn twice for "sweep" effect */}
+      <path d={pathD} fill="none" stroke="currentColor" stroke-width="3.2"
+        class="ad-osc__trace ad-osc__trace--ghost" style={`--ad-stream-length:${width};`} />
       <path d={pathD} fill="none" stroke="currentColor" stroke-width="1.2"
         class="ad-osc__trace" style={`--ad-stream-length:${width};`} />
 
@@ -121,6 +123,7 @@ const [cols, rows] = grid;
 
     {/* scan beam */}
     <div class="ad-osc__beam" aria-hidden="true"></div>
+    <div class="ad-osc__scanlines" aria-hidden="true"></div>
   </div>
 </figure>
 
@@ -161,7 +164,8 @@ const [cols, rows] = grid;
     position: relative;
     border: var(--ad-border-hair) solid var(--ad-ink);
     overflow: hidden;
-    background: var(--ad-paper);
+    background:
+      linear-gradient(180deg, var(--ad-surface) 0%, var(--ad-paper) 100%);
   }
 
   .ad-osc__screen svg {
@@ -172,18 +176,42 @@ const [cols, rows] = grid;
   .ad-osc__trace {
     stroke-dasharray: var(--ad-stream-length, 320);
     stroke-dashoffset: var(--ad-stream-length, 320);
-    animation: ad-stream var(--ad-dur-orbit) var(--ad-ease-step24) infinite;
+    animation:
+      ad-stream calc(var(--ad-dur-orbit) / 1.2) var(--ad-ease-step24) infinite,
+      ad-marker-flash 1400ms var(--ad-ease-step) infinite;
+  }
+
+  .ad-osc__trace--ghost {
+    opacity: 0.18;
   }
 
   .ad-osc__beam {
     position: absolute;
     top: 0;
     left: 0;
-    width: 2px;
+    width: 18px;
     height: 100%;
-    background: currentColor;
-    opacity: 0.55;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, currentColor 12%, transparent) 45%,
+      color-mix(in srgb, currentColor 55%, transparent) 100%
+    );
+    opacity: 0.65;
     animation: ad-scan var(--ad-dur-scan) var(--ad-ease-step24) infinite;
+  }
+
+  .ad-osc__scanlines {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0 7px,
+        color-mix(in srgb, var(--ad-ink) 5%, transparent) 7px 8px
+      );
+    opacity: 0.45;
+    pointer-events: none;
   }
 
   .ad-osc--paused .ad-osc__trace,

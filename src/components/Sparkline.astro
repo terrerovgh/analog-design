@@ -77,7 +77,7 @@ const deltaIsNegative = delta?.trim().startsWith('-');
 const useSignal = signal || deltaIsNegative;
 ---
 
-<div class:list={['ad-spark', useSignal && 'ad-spark--signal']}>
+<div class:list={['ad-spark', animated && 'ad-spark--animated', useSignal && 'ad-spark--signal']}>
   {(label || value || delta) && (
     <div class="ad-spark__head">
       {label && <span class="ad-spark__label">{label}</span>}
@@ -86,49 +86,62 @@ const useSignal = signal || deltaIsNegative;
     </div>
   )}
 
-  <svg
-    class:list={['ad-spark__svg', animated && 'ad-spark__svg--animated']}
-    width={width}
-    height={height}
-    viewBox={`0 0 ${width} ${height}`}
-    preserveAspectRatio="none"
-    role="img"
-    aria-label={label ?? 'sparkline'}
-  >
-    {/* baseline */}
-    <line x1="0" y1={height - 0.5} x2={width} y2={height - 0.5}
-      stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="2 2" />
+  <div class="ad-spark__plot">
+    <svg
+      class="ad-spark__svg"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label={label ?? 'sparkline'}
+    >
+      {/* baseline */}
+      <line x1="0" y1={height - 0.5} x2={width} y2={height - 0.5}
+        stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="2 2" />
 
-    {(area || variant === 'area') && (
-      <path d={areaD} fill="currentColor" fill-opacity="0.08" stroke="none" />
-    )}
+      {(area || variant === 'area') && (
+        <path d={areaD} fill="currentColor" fill-opacity="0.08" stroke="none" class="ad-spark__area" />
+      )}
 
-    <path
-      d={pathD}
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.5"
-      stroke-linejoin="miter"
-      stroke-linecap="square"
-      style={animated ? `--ad-stream-length:${width * 2};` : ''}
-    />
+      <path
+        class="ad-spark__trace"
+        d={pathD}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linejoin="miter"
+        stroke-linecap="square"
+        style={animated ? `--ad-stream-length:${width * 2};` : ''}
+      />
 
-    {showMarker && (
-      <>
-        <line
-          x1={last.x}
-          y1="0"
-          x2={last.x}
-          y2={height}
-          stroke="currentColor"
-          stroke-width="0.5"
-          stroke-dasharray="1 2"
-        />
-        <rect x={last.x - 2.5} y={last.y - 2.5} width="5" height="5"
-          fill="var(--ad-paper)" stroke="currentColor" stroke-width="1" />
-      </>
-    )}
-  </svg>
+      {showMarker && (
+        <>
+          <line
+            class="ad-spark__marker-line"
+            x1={last.x}
+            y1="0"
+            x2={last.x}
+            y2={height}
+            stroke="currentColor"
+            stroke-width="0.5"
+            stroke-dasharray="1 2"
+          />
+          <rect
+            class="ad-spark__marker"
+            x={last.x - 2.5}
+            y={last.y - 2.5}
+            width="5"
+            height="5"
+            fill="var(--ad-paper)"
+            stroke="currentColor"
+            stroke-width="1"
+          />
+        </>
+      )}
+    </svg>
+    {animated && <span class="ad-spark__beam" aria-hidden="true"></span>}
+  </div>
 </div>
 
 <style>
@@ -178,9 +191,46 @@ const useSignal = signal || deltaIsNegative;
     overflow: visible;
   }
 
-  .ad-spark__svg--animated path {
+  .ad-spark__plot {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ad-spark--animated .ad-spark__trace {
     stroke-dasharray: var(--ad-stream-length, 200);
     stroke-dashoffset: var(--ad-stream-length, 200);
-    animation: ad-stream var(--ad-dur-orbit) var(--ad-ease-step24) forwards;
+    animation: ad-stream calc(var(--ad-dur-orbit) / 1.6) var(--ad-ease-step24) forwards;
+  }
+
+  .ad-spark--animated .ad-spark__area {
+    opacity: 0;
+    animation: ad-fade-step var(--ad-dur-sweep) var(--ad-ease-step6) 140ms forwards;
+  }
+
+  .ad-spark--animated .ad-spark__marker-line,
+  .ad-spark--animated .ad-spark__marker {
+    opacity: 0;
+    animation: ad-fade-step var(--ad-dur-tick) var(--ad-ease-step) 280ms forwards;
+  }
+
+  .ad-spark--animated .ad-spark__marker {
+    animation:
+      ad-fade-step var(--ad-dur-tick) var(--ad-ease-step) 280ms forwards,
+      ad-marker-flash 1200ms var(--ad-ease-step) 900ms infinite;
+  }
+
+  .ad-spark__beam {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 14px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, currentColor 10%, transparent) 40%,
+      color-mix(in srgb, currentColor 35%, transparent) 100%
+    );
+    opacity: 0.35;
+    pointer-events: none;
+    animation: ad-scan calc(var(--ad-dur-scan) * 0.9) var(--ad-ease-step24) infinite;
   }
 </style>

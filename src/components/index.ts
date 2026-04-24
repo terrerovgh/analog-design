@@ -39,6 +39,7 @@ export { default as Terminal        } from './Terminal.astro';
 // Inputs / hardware-style
 export { default as KeycapButton    } from './KeycapButton.astro';
 export { default as RotaryKnob      } from './RotaryKnob.astro';
+export { default as ThemeToggle     } from './ThemeToggle.astro';
 
 // Static graphics
 export { default as AsciiDivider    } from './AsciiDivider.astro';
@@ -53,3 +54,20 @@ export { default as BusinessChart   } from './BusinessChart.astro';
 export { default as ProcessFlow     } from './ProcessFlow.astro';
 export { default as CircuitTrace    } from './CircuitTrace.astro';
 export { default as NetworkGraph    } from './NetworkGraph.astro';
+
+// ===== v0.4 Control Pack ===================================
+// Form primitives + navigation + dialog frame
+export { default as InputField      } from './InputField.astro';
+export { default as SelectField     } from './SelectField.astro';
+export { default as Toggle          } from './Toggle.astro';
+export { default as Slider          } from './Slider.astro';
+export { default as Tabs            } from './Tabs.astro';
+export { default as Dialog          } from './Dialog.astro';
+
+// ===== v0.5 Analytics Pack =================================
+// Charts and maps for magnitude / distribution / flow / location
+export { default as Gauge           } from './Gauge.astro';
+export { default as RadialChart     } from './RadialChart.astro';
+export { default as Treemap         } from './Treemap.astro';
+export { default as WaterfallChart  } from './WaterfallChart.astro';
+export { default as GeoMap          } from './GeoMap.astro';

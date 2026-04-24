@@ -116,19 +116,22 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
       ))}
 
       {/* edges */}
-      {edges.map((e) => {
+      {edges.map((e, i) => {
         const a = nodes[e.a];
         const b = nodes[e.b];
         if (!a || !b) return null;
         const isDown = a.state === 'down' || b.state === 'down';
+        const isActive = !isDown && (a.state === 'active' || b.state === 'active');
         return (
           <line
+            class:list={['ad-net__edge', isActive && 'ad-net__edge--active']}
             x1={px(a.x)} y1={py(a.y)}
             x2={px(b.x)} y2={py(b.y)}
             stroke="currentColor"
             stroke-width="1"
             stroke-dasharray={isDown ? '3 3' : undefined}
             opacity={isDown ? 0.4 : 0.85}
+            style={`--edge-delay:${i * 90}ms;`}
           />
         );
       })}
@@ -207,6 +210,7 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
         return sparks;
       })}
     </svg>
+    <div class="ad-net__beam" aria-hidden="true"></div>
   </div>
 </figure>
 
@@ -255,12 +259,20 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
     position: relative;
     border: var(--ad-border-hair) solid var(--ad-ink);
     overflow: hidden;
-    background: var(--ad-paper);
+    background:
+      radial-gradient(circle at top left, var(--ad-surface) 0%, transparent 42%),
+      linear-gradient(180deg, var(--ad-paper) 0%, var(--ad-surface) 100%);
   }
 
   .ad-net__svg {
     display: block;
     shape-rendering: geometricPrecision;
+  }
+
+  .ad-net__edge--active {
+    stroke-dasharray: 5 5;
+    animation: ad-dash-flow 1100ms var(--ad-ease-step12) infinite;
+    animation-delay: var(--edge-delay, 0ms);
   }
 
   .ad-net__node--down {
@@ -278,15 +290,36 @@ const activeCount = nodes.filter((n) => n.state === 'active').length;
     to   { opacity: 0; transform: scale(1.4); }
   }
 
+  .ad-net__beam {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 22px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, currentColor 8%, transparent) 45%,
+      color-mix(in srgb, currentColor 22%, transparent) 100%
+    );
+    opacity: 0.3;
+    pointer-events: none;
+    animation: ad-scan calc(var(--ad-dur-scan) * 1.3) var(--ad-ease-step24) infinite;
+  }
+
   .ad-net--paused .ad-net__packet { display: none; }
-  .ad-net--paused .ad-net__ping   { animation-play-state: paused; }
+  .ad-net--paused .ad-net__ping,
+  .ad-net--paused .ad-net__edge--active,
+  .ad-net--paused .ad-net__beam {
+    animation-play-state: paused;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .ad-net__packet {
       display: none;
     }
 
-    .ad-net__ping {
+    .ad-net__ping,
+    .ad-net__edge--active,
+    .ad-net__beam {
       animation: none;
     }
   }

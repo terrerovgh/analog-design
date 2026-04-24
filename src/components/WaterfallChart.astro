@@ -1,0 +1,285 @@
+---
+/**
+ * WaterfallChart — bridge chart showing positive / negative
+ * deltas leading from a starting value to a final total. Each
+ * step floats at the running level. Optional "total" steps
+ * baseline back to zero.
+ *
+ * @example
+ *   <WaterfallChart
+ *     title="QUARTER_BRIDGE"
+ *     unit="K"
+ *     steps={[
+ *       { label:'OPEN',     value: 1200, type:'start' },
+ *       { label:'NEW',      value:  340 },
+ *       { label:'EXPAND',   value:  180 },
+ *       { label:'CHURN',    value: -120 },
+ *       { label:'REFUND',   value:  -60 },
+ *       { label:'CLOSE',    value:  0,   type:'total' },
+ *     ]}
+ *   />
+ */
+
+type StepType = 'start' | 'delta' | 'total';
+
+interface Step {
+  label: string;
+  value: number;
+  type?: StepType;
+}
+
+interface Props {
+  title?: string;
+  code?: string;
+  steps: Step[];
+  width?: number;
+  height?: number;
+  unit?: string;
+  animated?: boolean;
+}
+
+const {
+  title,
+  code,
+  steps,
+  width = 520,
+  height = 240,
+  unit = '',
+  animated = true,
+} = Astro.props;
+
+// Layout constants
+const padL = 40;
+const padR = 16;
+const padT = 12;
+const padB = 36;
+const innerW = width - padL - padR;
+const innerH = height - padT - padB;
+
+// Resolve running totals + bar bands
+type Bar = {
+  label: string;
+  type: StepType;
+  value: number;       // raw (signed) for delta; cumulative for start/total
+  delta: number;       // change shown on the bar
+  base: number;        // y-value for base of bar
+  top: number;         // y-value for top of bar
+};
+
+let running = 0;
+const bars: Bar[] = steps.map((s, i) => {
+  const t: StepType = s.type ?? 'delta';
+  if (t === 'start') {
+    running = s.value;
+    return { label: s.label, type: t, value: running, delta: s.value, base: 0, top: running };
+  }
+  if (t === 'total') {
+    return { label: s.label, type: t, value: running, delta: running, base: 0, top: running };
+  }
+  const prev = running;
+  running += s.value;
+  const top = Math.max(prev, running);
+  const base = Math.min(prev, running);
+  return { label: s.label, type: t, value: s.value, delta: s.value, base, top };
+});
+
+const allValues = bars.flatMap((b) => [b.base, b.top]);
+const minV = Math.min(0, ...allValues);
+const maxV = Math.max(...allValues, 0);
+const range = maxV - minV || 1;
+
+const yPos = (v: number) => padT + innerH - ((v - minV) / range) * innerH;
+const barW = innerW / bars.length * 0.62;
+const slotW = innerW / bars.length;
+
+const yTicks = 4;
+const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
+  const v = minV + (range / yTicks) * i;
+  return { v, y: padT + innerH - (i / yTicks) * innerH };
+});
+---
+
+<figure class:list={['ad-waterfall', animated && 'ad-waterfall--animated']}>
+  {(title || code) && (
+    <figcaption class="ad-waterfall__head">
+      {title && <span class="ad-waterfall__title">{title}</span>}
+      <span class="ad-waterfall__head-meta">
+        {code && <span class="ad-waterfall__code">[{code}]</span>}
+        <span class="ad-waterfall__type">WATERFALL</span>
+      </span>
+    </figcaption>
+  )}
+
+  <svg
+    class="ad-waterfall__svg"
+    width="100%"
+    viewBox={`0 0 ${width} ${height}`}
+    preserveAspectRatio="xMidYMid meet"
+    role="img"
+    aria-label={title ?? 'waterfall chart'}
+  >
+    {/* Y grid + labels */}
+    {yLabels.map((t) => (
+      <>
+        <line x1={padL} y1={t.y} x2={width - padR} y2={t.y}
+          stroke="var(--ad-graphite-3)" stroke-width="0.5" stroke-dasharray="1 3" />
+        <text x={padL - 6} y={t.y + 3}
+          font-family="var(--ad-font-mono)"
+          font-size="9"
+          fill="var(--ad-muted)"
+          text-anchor="end">{Math.round(t.v)}{unit}</text>
+      </>
+    ))}
+
+    {/* baseline */}
+    <line x1={padL} y1={yPos(0)} x2={width - padR} y2={yPos(0)}
+      stroke="currentColor" stroke-width="1" />
+
+    {/* bars + connectors */}
+    {bars.map((bar, i) => {
+      const slotX = padL + i * slotW;
+      const x = slotX + (slotW - barW) / 2;
+      const top = yPos(bar.top);
+      const base = yPos(bar.base);
+      const h = base - top;
+      const isPositive = bar.delta >= 0;
+      const isPivot = bar.type === 'start' || bar.type === 'total';
+      const fillStyle = isPivot ? 'solid' : (isPositive ? 'striped' : 'dotted');
+      const next = bars[i + 1];
+      const connectorY = i === 0 ? null : yPos(bar.type === 'total' ? bar.top : (isPositive ? bar.base : bar.top));
+      const prevBar = bars[i - 1];
+      const linkY = prevBar
+        ? yPos(prevBar.type === 'total' ? prevBar.top : prevBar.top)
+        : null;
+
+      return (
+        <g class="ad-waterfall__group" style={`--bar-delay:${i * 90}ms;`}>
+          {/* connector from previous bar's top edge */}
+          {prevBar && (
+            <line
+              class="ad-waterfall__connector"
+              x1={padL + (i - 1) * slotW + (slotW + barW) / 2}
+              y1={prevBar.type === 'total' ? yPos(0) : yPos(running === 0 ? bar.top : (bar.delta >= 0 ? bar.base : bar.top))}
+              x2={x}
+              y2={prevBar.type === 'total' ? yPos(0) : yPos(bar.delta >= 0 ? bar.base : bar.top)}
+              stroke="currentColor"
+              stroke-width="0.75"
+              stroke-dasharray="2 2"
+            />
+          )}
+
+          {/* bar */}
+          <rect
+            class:list={[
+              'ad-waterfall__bar',
+              `ad-waterfall__bar--${fillStyle}`,
+              !isPivot && (isPositive ? 'ad-waterfall__bar--pos' : 'ad-waterfall__bar--neg'),
+            ]}
+            x={x} y={top} width={barW} height={Math.max(h, 1)}
+            stroke="currentColor"
+            stroke-width="1"
+          />
+
+          {/* delta label */}
+          <text
+            x={x + barW / 2}
+            y={top - 4}
+            font-family="var(--ad-font-mono)"
+            font-size="9"
+            font-weight="700"
+            fill={isPivot ? 'var(--ad-ink)' : (isPositive ? 'var(--ad-ink)' : 'var(--ad-signal)')}
+            text-anchor="middle">
+            {isPivot ? `${Math.round(bar.value)}${unit}` : `${bar.delta >= 0 ? '+' : ''}${Math.round(bar.delta)}${unit}`}
+          </text>
+
+          {/* x label */}
+          <text
+            x={x + barW / 2}
+            y={padT + innerH + 16}
+            font-family="var(--ad-font-mono)"
+            font-size="9"
+            fill="var(--ad-muted)"
+            text-anchor="middle">{bar.label}</text>
+        </g>
+      );
+    })}
+  </svg>
+
+  <div class="ad-waterfall__legend">
+    <span class="ad-waterfall__chip ad-waterfall__chip--pivot">PIVOT</span>
+    <span class="ad-waterfall__chip ad-waterfall__chip--pos">+ POSITIVE</span>
+    <span class="ad-waterfall__chip ad-waterfall__chip--neg">— NEGATIVE</span>
+  </div>
+</figure>
+
+<style>
+  .ad-waterfall {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ad-space-2);
+    margin: 0;
+    color: var(--ad-ink);
+    font-family: var(--ad-font-mono);
+    width: 100%;
+  }
+
+  .ad-waterfall__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: var(--ad-space-2);
+    border-bottom: var(--ad-border-hair) solid var(--ad-ink);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+  }
+
+  .ad-waterfall__title { font-weight: var(--ad-weight-bold); }
+  .ad-waterfall__head-meta { display: inline-flex; gap: var(--ad-space-2); }
+  .ad-waterfall__code, .ad-waterfall__type { color: var(--ad-muted); }
+
+  .ad-waterfall__svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+
+  .ad-waterfall__bar {
+    fill: var(--ad-paper);
+    transform-origin: center bottom;
+    transform-box: fill-box;
+  }
+
+  .ad-waterfall--animated .ad-waterfall__bar {
+    animation: ad-grow-y var(--ad-dur-sweep) var(--ad-ease-step6) backwards;
+    animation-delay: var(--bar-delay, 0ms);
+  }
+
+  .ad-waterfall__bar--solid { fill: currentColor; }
+
+  .ad-waterfall__bar--striped {
+    fill: var(--ad-paper);
+    stroke-dasharray: 4 2;
+  }
+
+  .ad-waterfall__bar--neg {
+    stroke: var(--ad-signal);
+  }
+
+  .ad-waterfall__legend {
+    display: flex;
+    gap: var(--ad-space-3);
+    font-size: var(--ad-text-2xs);
+    letter-spacing: var(--ad-track-wide);
+    text-transform: uppercase;
+    color: var(--ad-muted);
+  }
+
+  .ad-waterfall__chip {
+    padding: 2px 6px;
+    border: var(--ad-border-hair) solid var(--ad-grid);
+  }
+
+  .ad-waterfall__chip--pos { color: var(--ad-ink); }
+  .ad-waterfall__chip--neg { color: var(--ad-signal); border-color: var(--ad-signal); }
+  .ad-waterfall__chip--pivot { background: var(--ad-ink); color: var(--ad-paper); border-color: var(--ad-ink); }
+</style>
