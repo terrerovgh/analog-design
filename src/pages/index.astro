@@ -442,7 +442,20 @@ import Terminal        from '../components/Terminal.astro';
     gap: var(--ad-space-12);
     padding: var(--ad-space-8) 0 var(--ad-space-12);
     align-items: center;
+    position: relative;
   }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--ad-ink) 8%, transparent) 1px, transparent 1px) 0 0 / 64px 64px,
+      linear-gradient(180deg, color-mix(in srgb, var(--ad-ink) 6%, transparent) 1px, transparent 1px) 0 0 / 64px 64px;
+    mask-image: linear-gradient(90deg, black, transparent 78%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero__col { position: relative; z-index: 1; }
   @media (max-width: 880px) {
     .hero { grid-template-columns: 1fr; gap: var(--ad-space-8); }
   }
@@ -486,6 +499,9 @@ import Terminal        from '../components/Terminal.astro';
     grid-template-columns: repeat(2, auto);
     gap: var(--ad-space-6);
     justify-content: end;
+    padding: var(--ad-space-5);
+    border: var(--ad-border-hair) solid var(--ad-grid);
+    background: var(--ad-glass);
   }
 
   /* ===== Part header ===================================== */

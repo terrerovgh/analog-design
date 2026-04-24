@@ -23,19 +23,21 @@ const { label = 'Theme' } = Astro.props;
 </button>
 
 <script>
+  type Theme = 'light' | 'dark';
+
   const root = document.documentElement;
   const storageKey = 'analog-design-theme';
   const toggles = Array.from(document.querySelectorAll('[data-theme-toggle]'));
 
-  const getSystemTheme = () =>
+  const getSystemTheme = (): Theme =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
-  const getResolvedTheme = () => {
+  const getResolvedTheme = (): Theme => {
     const stored = window.localStorage.getItem(storageKey);
     return stored === 'dark' || stored === 'light' ? stored : getSystemTheme();
   };
 
-  const syncToggles = (theme) => {
+  const syncToggles = (theme: Theme) => {
     for (const toggle of toggles) {
       const isDark = theme === 'dark';
       toggle.setAttribute('aria-pressed', String(isDark));
@@ -44,7 +46,7 @@ const { label = 'Theme' } = Astro.props;
     }
   };
 
-  const applyTheme = (theme) => {
+  const applyTheme = (theme: Theme) => {
     root.dataset.theme = theme;
     syncToggles(theme);
   };

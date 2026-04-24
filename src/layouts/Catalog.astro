@@ -172,7 +172,9 @@ const seo = {
     min-height: 100dvh;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    background: var(--ad-bg);
+    background:
+      linear-gradient(180deg, var(--ad-glass), transparent 220px),
+      transparent;
     transition: background-color var(--ad-dur-sweep) var(--ad-ease-step6);
   }
 
@@ -182,7 +184,9 @@ const seo = {
     justify-content: space-between;
     padding: var(--ad-space-2) var(--ad-space-4);
     border-bottom: var(--ad-border-hair) solid var(--ad-ink);
-    background: var(--ad-elevated);
+    background:
+      repeating-linear-gradient(90deg, transparent 0 9px, color-mix(in srgb, var(--ad-ink) 4%, transparent) 9px 10px),
+      var(--ad-elevated);
     font-family: var(--ad-font-mono);
     font-size: var(--ad-text-2xs);
     letter-spacing: var(--ad-track-wide);
@@ -210,6 +214,7 @@ const seo = {
     height: 6px;
     background: var(--ad-ink);
     display: inline-block;
+    box-shadow: 10px 0 0 var(--ad-grid);
   }
 
   .strip__brand {
@@ -230,7 +235,22 @@ const seo = {
     max-width: 1400px;
     width: 100%;
     margin: 0 auto;
+    position: relative;
   }
+
+  .frame::before,
+  .frame::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: color-mix(in srgb, var(--ad-ink) 12%, transparent);
+    pointer-events: none;
+  }
+
+  .frame::before { left: max(var(--ad-space-4), calc((100vw - 1400px) / 2)); }
+  .frame::after  { right: max(var(--ad-space-4), calc((100vw - 1400px) / 2)); }
 
   .nav {
     display: flex;
@@ -239,7 +259,9 @@ const seo = {
     gap: var(--ad-space-4);
     padding: var(--ad-space-3) var(--ad-space-4);
     border-bottom: var(--ad-border-hair) dotted var(--ad-graphite-5);
-    background: var(--ad-surface);
+    background:
+      linear-gradient(180deg, var(--ad-surface), var(--ad-elevated)),
+      var(--ad-surface);
     font-family: var(--ad-font-mono);
     font-size: var(--ad-text-2xs);
     letter-spacing: var(--ad-track-wide);
@@ -280,8 +302,12 @@ const seo = {
     gap: var(--ad-space-3);
     align-items: flex-start;
     border: var(--ad-border-hair) solid var(--ad-grid);
-    background: var(--ad-elevated);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--ad-ink) 4%, transparent) 0 10px, transparent 10px 100%),
+      var(--ad-elevated);
     min-height: 56px;
+    position: relative;
+    isolation: isolate;
     transition:
       color var(--ad-dur-blink) var(--ad-ease-step),
       border-color var(--ad-dur-blink) var(--ad-ease-step),
@@ -291,13 +317,26 @@ const seo = {
   .nav__link:hover {
     color: var(--ad-ink);
     border-color: var(--ad-rule);
+    background: var(--ad-plate);
   }
 
   .nav__link--active {
     color: var(--ad-ink);
     font-weight: var(--ad-weight-bold);
-    background: var(--ad-surface-2);
+    background:
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--ad-ink) 9%, transparent) 0 1px, transparent 1px 8px),
+      var(--ad-surface-2);
     border-color: var(--ad-rule);
+  }
+
+  .nav__link--active::after {
+    content: "";
+    position: absolute;
+    left: var(--ad-space-2);
+    right: var(--ad-space-2);
+    bottom: 5px;
+    height: 2px;
+    background: var(--ad-ink);
   }
 
   .nav__index {

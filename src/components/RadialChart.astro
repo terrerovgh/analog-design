@@ -56,6 +56,9 @@ const rings = series.map((s, i) => {
   const circ = 2 * Math.PI * radius;
   return { ...s, t, radius, circ, max };
 });
+const instanceId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID().replace(/-/g, '')
+  : `${size}-${series.length}`;
 ---
 
 <figure class="ad-radial">
@@ -74,6 +77,14 @@ const rings = series.map((s, i) => {
       role="img"
       aria-label={title ?? 'radial chart'}
     >
+      <defs>
+        <pattern id={`ad-radial-grid-${instanceId}`} width="12" height="12" patternUnits="userSpaceOnUse">
+          <path d="M12 0H0V12" fill="none" stroke="currentColor" stroke-width="0.35" opacity="0.16" />
+        </pattern>
+      </defs>
+      <rect x="1" y="1" width={size - 2} height={size - 2}
+        fill={`url(#ad-radial-grid-${instanceId})`} stroke="currentColor" stroke-width="0.5" opacity="0.5" />
+      <circle cx={cx} cy={cy} r={outerR + 2} fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.28" />
       {/* center cross */}
       <line x1={cx - 6} y1={cy} x2={cx + 6} y2={cy} stroke="currentColor" stroke-width="0.5" />
       <line x1={cx} y1={cy - 6} x2={cx} y2={cy + 6} stroke="currentColor" stroke-width="0.5" />
@@ -166,6 +177,8 @@ const rings = series.map((s, i) => {
   .ad-radial__svg {
     display: block;
     shape-rendering: geometricPrecision;
+    background: var(--ad-plate);
+    border: var(--ad-border-hair) solid var(--ad-ink);
   }
 
   .ad-radial__fill {
@@ -199,6 +212,7 @@ const rings = series.map((s, i) => {
     gap: var(--ad-space-3);
     border-bottom: var(--ad-border-hair) dotted var(--ad-grid);
     padding-bottom: 2px;
+    min-width: 118px;
   }
 
   .ad-radial__name {

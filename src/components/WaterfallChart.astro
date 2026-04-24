@@ -67,7 +67,7 @@ type Bar = {
 };
 
 let running = 0;
-const bars: Bar[] = steps.map((s, i) => {
+const bars: Bar[] = steps.map((s) => {
   const t: StepType = s.type ?? 'delta';
   if (t === 'start') {
     running = s.value;
@@ -145,12 +145,9 @@ const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
       const isPositive = bar.delta >= 0;
       const isPivot = bar.type === 'start' || bar.type === 'total';
       const fillStyle = isPivot ? 'solid' : (isPositive ? 'striped' : 'dotted');
-      const next = bars[i + 1];
-      const connectorY = i === 0 ? null : yPos(bar.type === 'total' ? bar.top : (isPositive ? bar.base : bar.top));
       const prevBar = bars[i - 1];
-      const linkY = prevBar
-        ? yPos(prevBar.type === 'total' ? prevBar.top : prevBar.top)
-        : null;
+      const prevLevel = prevBar ? (prevBar.type === 'total' ? prevBar.top : prevBar.top) : 0;
+      const curLevel = bar.type === 'total' ? bar.top : (isPositive ? bar.base : bar.top);
 
       return (
         <g class="ad-waterfall__group" style={`--bar-delay:${i * 90}ms;`}>
@@ -159,9 +156,9 @@ const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
             <line
               class="ad-waterfall__connector"
               x1={padL + (i - 1) * slotW + (slotW + barW) / 2}
-              y1={prevBar.type === 'total' ? yPos(0) : yPos(running === 0 ? bar.top : (bar.delta >= 0 ? bar.base : bar.top))}
+              y1={yPos(prevLevel)}
               x2={x}
-              y2={prevBar.type === 'total' ? yPos(0) : yPos(bar.delta >= 0 ? bar.base : bar.top)}
+              y2={yPos(curLevel)}
               stroke="currentColor"
               stroke-width="0.75"
               stroke-dasharray="2 2"
@@ -221,6 +218,7 @@ const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
     color: var(--ad-ink);
     font-family: var(--ad-font-mono);
     width: 100%;
+    min-width: 0;
   }
 
   .ad-waterfall__head {
@@ -240,7 +238,13 @@ const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
 
   .ad-waterfall__svg {
     display: block;
+    width: 100%;
+    max-width: 100%;
     shape-rendering: geometricPrecision;
+    border: var(--ad-border-hair) solid var(--ad-ink);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--ad-ink) 5%, transparent) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--ad-plate);
   }
 
   .ad-waterfall__bar {
@@ -263,6 +267,11 @@ const yLabels = Array.from({ length: yTicks + 1 }).map((_, i) => {
 
   .ad-waterfall__bar--neg {
     stroke: var(--ad-signal);
+    fill: color-mix(in srgb, var(--ad-signal) 12%, var(--ad-paper));
+  }
+
+  .ad-waterfall__connector {
+    opacity: 0.72;
   }
 
   .ad-waterfall__legend {

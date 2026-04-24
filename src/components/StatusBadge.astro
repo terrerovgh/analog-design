@@ -58,9 +58,22 @@ const display = (label ?? defaultLabels[state]).toUpperCase();
     line-height: 1;
     text-transform: uppercase;
     color: var(--ad-ink);
-    background: transparent;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, currentColor 5%, transparent), transparent),
+      var(--ad-paper);
     user-select: none;
     white-space: nowrap;
+    position: relative;
+    min-height: 20px;
+    box-shadow: inset 0 -1px 0 color-mix(in srgb, currentColor 16%, transparent);
+  }
+
+  .ad-badge::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border: var(--ad-border-hair) dotted color-mix(in srgb, currentColor 20%, transparent);
+    pointer-events: none;
   }
 
   .ad-badge__dot {
@@ -69,6 +82,7 @@ const display = (label ?? defaultLabels[state]).toUpperCase();
     border-radius: 50%;
     background: var(--ad-ink);
     flex-shrink: 0;
+    box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 12%, transparent);
   }
 
   .ad-badge__label {
@@ -125,5 +139,11 @@ const display = (label ?? defaultLabels[state]).toUpperCase();
   .ad-badge--processing .ad-badge__dot {
     background: var(--ad-ink);
     animation: ad-blink 0.6s var(--ad-ease-step) infinite;
+  }
+
+  .ad-badge--processing {
+    background:
+      repeating-linear-gradient(90deg, color-mix(in srgb, currentColor 10%, transparent) 0 1px, transparent 1px 5px),
+      var(--ad-paper);
   }
 </style>

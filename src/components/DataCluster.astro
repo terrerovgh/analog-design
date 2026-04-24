@@ -71,9 +71,26 @@ const { name, code, metrics, footer } = Astro.props;
     min-width: 180px;
     padding: var(--pad);
     border: var(--ad-border-hair) solid var(--ad-ink);
-    background: var(--ad-paper);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--ad-ink) 5%, transparent) 0 12px, transparent 12px),
+      linear-gradient(180deg, var(--ad-plate), var(--ad-paper));
     font-family: var(--ad-font-mono);
     color: var(--ad-ink);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ad-cluster::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 18px;
+    height: 18px;
+    border-left: var(--ad-border-hair) solid var(--ad-grid);
+    border-bottom: var(--ad-border-hair) solid var(--ad-grid);
+    background: color-mix(in srgb, var(--ad-ink) 5%, transparent);
+    pointer-events: none;
   }
 
   .ad-cluster__head {
@@ -119,6 +136,8 @@ const { name, code, metrics, footer } = Astro.props;
     grid-template-columns: 1fr auto;
     align-items: baseline;
     gap: var(--ad-space-3);
+    padding: 2px 0;
+    border-bottom: var(--ad-border-hair) dotted color-mix(in srgb, var(--ad-ink) 18%, transparent);
   }
 
   .ad-cluster__label {

@@ -198,7 +198,19 @@ const fillStyles = ['solid', 'striped', 'dotted', 'gridded'] as const;
     position: relative;
     width: 100%;
     border: var(--ad-border-hair) solid var(--ad-ink);
-    background: var(--ad-elevated);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--ad-ink) 6%, transparent) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(180deg, color-mix(in srgb, var(--ad-ink) 5%, transparent) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--ad-elevated);
+    overflow: hidden;
+  }
+
+  .ad-treemap__frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 6px solid color-mix(in srgb, var(--ad-paper) 40%, transparent);
+    pointer-events: none;
   }
 
   .ad-treemap__tile {
@@ -217,6 +229,14 @@ const fillStyles = ['solid', 'striped', 'dotted', 'gridded'] as const;
     opacity: 0;
     animation: ad-fade-step var(--ad-dur-tick) var(--ad-ease-step) forwards;
     animation-delay: var(--tile-delay, 0ms);
+    transition:
+      background-color var(--ad-dur-blink) var(--ad-ease-step),
+      color var(--ad-dur-blink) var(--ad-ease-step);
+  }
+
+  .ad-treemap__tile:hover {
+    background-color: var(--ad-ink);
+    color: var(--ad-paper);
   }
 
   .ad-treemap__tile--small { padding: 4px 6px; }
@@ -259,6 +279,11 @@ const fillStyles = ['solid', 'striped', 'dotted', 'gridded'] as const;
     font-weight: var(--ad-weight-bold);
     font-size: var(--ad-text-xs);
     color: var(--ad-ink);
+  }
+
+  .ad-treemap__tile:hover .ad-treemap__tile-name,
+  .ad-treemap__tile:hover .ad-treemap__tile-value {
+    color: var(--ad-paper);
   }
 
   .ad-treemap__tile-code,
