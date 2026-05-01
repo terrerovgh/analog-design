@@ -35,11 +35,11 @@
     "astro": "astro"
   },
   "peerDependencies": {
-    "astro": "^6.1.9"
+    "astro": "^6.2.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
-    "astro": "^6.1.9",
+    "astro": "^6.2.1",
     "typescript": "^5.8.3"
   },
   "keywords": [
